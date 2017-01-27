@@ -13,6 +13,15 @@ function SqliteDB(dbFile) {
   var sql = this.db;
     
   sql.serialize(function() {
+    sql.run("CREATE TABLE IF NOT EXISTS `tbl_users` (" +
+          "`id`              INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT," +
+          "`key`             VARCHAR(128) NOT NULL," +
+          "`user_name`       VARCHAR(64) NOT NULL," +
+          "`password`        VARCHAR(64) NOT NULL," +
+          "`ts`              INTEGER NOT NULL," +
+          "`last_login_ts`   INTEGER NOT NULL," +
+          "`enabled`         TINYINT NOT NULL);");
+
     sql.run("CREATE TABLE IF NOT EXISTS `tbl_devices` (" +
           "`id`                  INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT," +
           "`type`                INTEGER NOT NULL," +
@@ -21,6 +30,98 @@ function SqliteDB(dbFile) {
           "`os_version`          VARCHAR(64) NOT NULL," +
           "`last_update_ts`      INTEGER NOT NULL," +
           "`enabled`             TINYINT NOT NULL);");
+  });
+}
+
+SqliteDB.prototype.CheckUserKey = function(key, callback) {
+  var sql = this.db;
+  console.log ("DATABASE CheckUserKey");
+  return sql.serialize(function() {
+    var query = "SELECT 'OK' as status, `id` " +
+        "FROM  `tbl_users` " +
+        "WHERE `key` = '" + key + "';";
+
+    return sql.all(query, function(err, rows) {
+      if (rows.length > 0) {
+        if (rows[0].status == 'OK') {
+          return callback (1);
+        }
+      }
+      return callback (0);
+    });
+  });
+}
+
+SqliteDB.prototype.SelectUsers = function(callback) {
+  var sql = this.db;
+  console.log ("DATABASE SelectUsers");
+  sql.serialize(function() {
+    var query = "SELECT `id`, `key`, `user_name`, `password`, `ts`, `last_login_ts`, `enabled` FROM  `tbl_users`;";
+    sql.all(query, function(err, rows) {
+      callback(null, rows);
+    });
+  });
+}
+
+SqliteDB.prototype.SelectUserByNamePassword = function(user, callback) {
+  var sql = this.db;
+  console.log ("DATABASE SelectUserByNamePassword");
+  sql.serialize(function() {
+    var query = "SELECT `id`, `key`, `user_name`, `password`, `ts`, `last_login_ts`, `enabled` FROM  `tbl_users` WHERE `user_name`='" + user.userName + "' AND `password`='" + user.password + "';";
+    sql.all(query, function(err, rows) {
+      if (rows.length > 0) {
+        user.key = rows[0].key;
+        user.id = rows[0].id;
+        user.ts = rows[0].ts;
+        user.lastLoginTs = rows[0].last_login_ts;
+        user.enabled = rows[0].enabled;
+        callback(null, user);
+      } else {
+        callback(null, null);
+      }  
+    });
+  });
+}
+
+SqliteDB.prototype.SelectUserById = function(user, callback) {
+  var sql = this.db;
+  console.log ("DATABASE SelectUserById");
+  sql.serialize(function() {
+    var query = "SELECT `id`, `key`, `user_name`, `password`, `ts`, `last_login_ts`, `enabled` FROM  `tbl_users` WHERE `id`=" + user.id + ";";
+    sql.all(query, function(err, rows) {
+      if (rows.length > 0) {
+        user.key = rows[0].key;
+        user.id = rows[0].id;
+        user.ts = rows[0].ts;
+        user.lastLoginTs = rows[0].last_login_ts;
+        user.enabled = rows[0].enabled;
+        callback(null, user);
+      } else {
+        callback(null, null);
+      }  
+    });
+  });
+}
+
+SqliteDB.prototype.InsertUser = function(user, callback) {
+  var sql = this.db;
+  console.log ("DATABASE InsertUser");
+  user.key = GenerateUUID();
+  sql.serialize(function() {
+    var query = "INSERT INTO `tbl_users` (`id`, `key`, `user_name`, `password`, `ts`, `last_login_ts`, `enabled`) " +
+        "VALUES (NULL,'" + user.key + "','" + user.userName + "','" + user.password + "'," + user.ts + "," + user.lastLoginTs + ", 1);";
+    sql.run(query);
+    callback({error:"OK"}, user.key);
+  });
+}
+
+SqliteDB.prototype.DeleteUsers = function(callback) {
+  var sql = this.db;
+  console.log ("DATABASE DeleteUsers");
+  sql.serialize(function() {
+    var query = "DELETE FROM `tbl_users`;";
+    sql.run(query);
+    callback({error:"OK"});
   });
 }
 

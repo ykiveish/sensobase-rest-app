@@ -1,14 +1,194 @@
 var express     = require('express');
 var path        = require('path');
 const sqlModule = require('./modules/sqlite.js')();
+const secModule = require('./modules/security.js')();
 const moment    = require('moment');
                                   
-var sql = new sqlModule('database.db');
+var sql       = new sqlModule('database.db');
+var security  = new secModule (sql);
+
 var app = express();
 app.use(express.static(path.join(__dirname, 'public')));
 
+app.get('/select/users/:key', function(req, res) {
+  console.log ("METHOD /select/users");
+  security.CheckAdmin(req.params.key, function(valid) {
+    if (valid) {
+      sql.SelectUsers(function(err, users){
+        var data = [];
+        for (i = 0; i < users.length; i++) {
+          var user = {
+            id: users[i].id,
+            key: users[i].key,
+            userName: users[i].user_name,
+            password: users[i].password,
+            ts: users[i].ts,
+            lastLoginTs: users[i].last_login_ts,
+            enabled: users[i].enabled
+          };
+          data.push(user);
+        }
+        res.json(data);
+      });
+    } else {
+      res.json({error:"security issue"});
+    }
+  });
+});
+
+app.get('/insert/user/:key/:name/:password', function(req, res) {
+  console.log ("METHOD /insert/user");
+  security.CheckAdmin(req.params.key, function(valid) {
+    if (valid) {
+      var user = {
+        id: 0,
+        key: "0",
+        userName: req.params.name,
+        password: req.params.password,
+        ts: moment().unix(),
+        lastLoginTs: moment().unix(),
+        enabled: 1
+      };
+      
+      sql.SelectUserByNamePassword (user, function(err, existingUser) {
+        if (existingUser != null) {
+          res.json({error:"user exist"});
+        } else {
+          sql.InsertUser(user, function(err, key) {
+            res.json(key);
+          });
+        }
+      });
+    } else {
+      res.json({error:"security issue"});
+    }
+  });
+});
+
+app.get('/delete/users/:key', function(req, res) {
+  console.log ("METHOD /delete/users");
+  security.CheckAdmin(req.params.key, function(valid) {
+    if (valid) {
+      sql.DeleteUsers(function(err){
+        res.json(err);
+      });
+    } else {
+      res.json({error:"security issue"});
+    }
+  });
+});
+
+GetUserByNamePassword = function (username, password, callback) {
+  var user = {
+    id: 0,
+    key: "0",
+    userName: username,
+    password: password,
+    ts: moment().unix(),
+    lastLoginTs: moment().unix(),
+    enabled: 1
+  };
+  sql.SelectUserByNamePassword (user, function(err, existingUser) {
+    if (existingUser != null) {
+      callback (existingUser);
+    } else {
+      callback (null);
+    }
+  });
+}
+
+GetUserById = function (id, callback) {
+  var user = {
+    id: id,
+    key: "0",
+    userName: "",
+    password: "",
+    ts: moment().unix(),
+    lastLoginTs: moment().unix(),
+    enabled: 1
+  };
+  sql.SelectUserById (user, function(err, existingUser) {
+    if (existingUser != null) {
+      callback (existingUser);
+    } else {
+      callback (null);
+    }
+  });
+}
+
+app.get('/select/user/:key/:name/:password', function(req, res) {
+  console.log ("METHOD /select/user [U/P]");
+  security.CheckUUID(req.params.key, function (valid) {
+    if (valid) {
+      GetUserByNamePassword (req.params.name, req.params.password, function (user) {
+        if (user != null) {
+          res.json(user);
+        } else {
+          res.json({error:"user doesn't exist"});
+        }
+      });
+    } else {
+      security.CheckAdmin(req.params.key, function(valid) {
+        if (valid) {
+          GetUserByNamePassword (req.params.name, req.params.password, function (user) {
+            if (user != null) {
+              res.json(user);
+            } else {
+              res.json({error:"user doesn't exist"});
+            }
+          });
+        } else {
+          res.json({error:"security issue"});
+        }
+      });
+    }
+  });
+});
+
+app.get('/select/user/:key/:id', function(req, res) {
+  console.log ("METHOD /select/user [ID]");
+  security.CheckUUID(req.params.key, function (valid) {
+    if (valid) {
+      GetUserById (req.params.id, function (user) {
+        if (user != null) {
+          res.json(user);
+        } else {
+          res.json({error:"user doesn't exist"});
+        }
+      });
+    } else {
+      security.CheckAdmin(req.params.key, function(valid) {
+        if (valid) {
+          GetUserById (req.params.id, function (user) {
+            if (user != null) {
+              res.json(user);
+            } else {
+              res.json({error:"user doesn't exist"});
+            }
+          });
+        } else {
+          res.json({error:"security issue"});
+        }
+      });
+    }
+  });
+});
+
+/* 
+  - Select one user by
+  DONE 1. username and password 
+  2. id
+  - Delete user by id
+  - Login method.
+  
+*/
+
 app.get('/select/devices', function(req, res) {
   console.log ("METHOD /select/devices");
+  security.CheckUUID(req.params.key, function(valid) {
+
+  });
+
   sql.SelectDevices(function(err, devices) {
     var data = [];
     
@@ -19,7 +199,7 @@ app.get('/select/devices', function(req, res) {
         uuid: devices[i].uuid,
         osType: devices[i].os_type,
         osVersion: devices[i].os_version,
-        lastUpdateTS: devices[i].last_update_ts,
+        lastUpdateTs: devices[i].last_update_ts,
         enabled: devices[i].enabled
       };
       data.push(device);
