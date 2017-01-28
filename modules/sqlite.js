@@ -11,7 +11,21 @@ function GenerateUUID () {
 function SqliteDB(dbFile) {
   this.db = new sqlite3.Database(dbFile);
   var sql = this.db;
-    
+  
+  /*
+  new sqlite3.Database(filename, [mode], [callback])
+    filename:             Valid values are filenames, ":memory:" for an anonymous in-memory database and an empty string for an anonymous disk-based database. 
+                          Anonymous databases are not persisted and when closing the database handle, their contents are lost.
+    mode (optional):      One or more of sqlite3.OPEN_READONLY, sqlite3.OPEN_READWRITE and sqlite3.OPEN_CREATE. The default value is OPEN_READWRITE | OPEN_CREATE.
+    callback (optional):  If provided, this function will be called when the database was opened successfully or when an error occurred. The first argument is an error object. 
+                          When it is null, opening succeeded. If no callback is provided and an error occurred, an error event with the error object as the only parameter 
+                          will be emitted on the database object. If opening succeeded, an open event with no parameters is emitted, regardless of whether a callback was provided or not.
+  Database#configure(option, value)
+    Tracing & profiling
+      trace:    provide a function callback as a value. Invoked when an SQL statement executes, with a rendering of the statement text.
+      profile:  provide a function a function callback. Invoked every time an SQL statement executes.
+  */
+
   sql.serialize(function() {
     sql.run("CREATE TABLE IF NOT EXISTS `tbl_users` (" +
           "`id`              INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT," +

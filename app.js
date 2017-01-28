@@ -193,8 +193,21 @@ app.get('/select/user/:key/:id', function(req, res) {
   });
 });
 
+/*
+ * Delete user from database. Admin rights required.
+ */
+app.get('/login/:name/:password', function(req, res) {
+  console.log ("METHOD /login");
+    GetUserByNamePassword (req.params.name, req.params.password, function (user) {
+      if (user != null) {
+        res.json(user.key);
+      } else {
+        res.json({error:"user doesn't exist"});
+      }
+    });
+});
+
 /* 
-  - Login method.
   - Delete/Insert user need to be verified. what sql.run returns?
 */
 

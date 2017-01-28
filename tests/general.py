@@ -30,7 +30,7 @@ if (len(jsonData) > 0):
 else:
 	sys.exit(0)
 
-Response = urllib2.urlopen("http://ec2-35-161-108-53.us-west-2.compute.amazonaws.com:8080/select/user/" + user['key'] + "/" + user['userName'] + "/" + user['password'] + "").read()
+Response = urllib2.urlopen("http://ec2-35-161-108-53.us-west-2.compute.amazonaws.com:8080/select/user/" + user['key'] + "/" + user['userName'] + "/" + user['password']).read()
 if "security issue" not in Response:
   if "user exist" not in Response:
     print "METHOD select/user [U/P] ... SUCCESS [" + Response + "]"
@@ -40,7 +40,7 @@ else:
   print "METHOD select/user [U/P] ... FAILED"
   sys.exit(0)
 
-Response = urllib2.urlopen("http://ec2-35-161-108-53.us-west-2.compute.amazonaws.com:8080/select/user/ux0xhwyqocp/" + user['userName'] + "/" + user['password'] + "").read()
+Response = urllib2.urlopen("http://ec2-35-161-108-53.us-west-2.compute.amazonaws.com:8080/select/user/ux0xhwyqocp/" + user['userName'] + "/" + user['password']).read()
 if "security issue" not in Response:
   if "user exist" not in Response:
     print "METHOD select/user [U/P] ADMIN ... SUCCESS [" + Response + "]"
@@ -109,5 +109,15 @@ if "security issue" not in Response:
 else:
   print "METHOD select/user [ID] ... FAILED"
   sys.exit(0)
+
+#
+# Testing login method.
+#
+Response = urllib2.urlopen("http://ec2-35-161-108-53.us-west-2.compute.amazonaws.com:8080/login/" + user['userName'] + "/" + user['password']).read()
+if "user exist" not in Response:
+  print "METHOD login ... SUCCESS [" + Response + "]"
+else:
+  print "METHOD login ... WARNING [" + Response + "]"
+
 
 print "\nALL DONE .... "
