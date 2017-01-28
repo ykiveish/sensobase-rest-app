@@ -71,6 +71,8 @@ SqliteDB.prototype.SelectUserByNamePassword = function(user, callback) {
     sql.all(query, function(err, rows) {
       if (rows.length > 0) {
         user.key = rows[0].key;
+        user.userName = rows[0].user_name;
+        user.password = rows[0].password;
         user.id = rows[0].id;
         user.ts = rows[0].ts;
         user.lastLoginTs = rows[0].last_login_ts;
@@ -91,6 +93,8 @@ SqliteDB.prototype.SelectUserById = function(user, callback) {
     sql.all(query, function(err, rows) {
       if (rows.length > 0) {
         user.key = rows[0].key;
+        user.userName = rows[0].user_name;
+        user.password = rows[0].password;
         user.id = rows[0].id;
         user.ts = rows[0].ts;
         user.lastLoginTs = rows[0].last_login_ts;
@@ -112,6 +116,17 @@ SqliteDB.prototype.InsertUser = function(user, callback) {
         "VALUES (NULL,'" + user.key + "','" + user.userName + "','" + user.password + "'," + user.ts + "," + user.lastLoginTs + ", 1);";
     sql.run(query);
     callback({error:"OK"}, user.key);
+  });
+}
+
+SqliteDB.prototype.DeleteUserById = function(id, callback) {
+  var sql = this.db;
+  console.log ("DATABASE DeleteUserById");
+  sql.serialize(function() {
+    var query = "DELETE FROM `tbl_users` WHERE `id`=" + id + ";";
+    ret = sql.run(query);
+    console.log ("DATABASE DeleteUserById -------------------- " + ret);
+    callback({error:"OK"});
   });
 }
 

@@ -65,11 +65,30 @@ app.get('/insert/user/:key/:name/:password', function(req, res) {
   });
 });
 
+/*
+ * Delete whole user table content from database. Admin rights required.
+ */
 app.get('/delete/users/:key', function(req, res) {
   console.log ("METHOD /delete/users");
   security.CheckAdmin(req.params.key, function(valid) {
     if (valid) {
       sql.DeleteUsers(function(err){
+        res.json(err);
+      });
+    } else {
+      res.json({error:"security issue"});
+    }
+  });
+});
+
+/*
+ * Delete user from database. Admin rights required.
+ */
+app.get('/delete/user/:key/:id', function(req, res) {
+  console.log ("METHOD /delete/user");
+  security.CheckAdmin(req.params.key, function(valid) {
+    if (valid) {
+      sql.DeleteUserById(req.params.id, function(err){
         res.json(err);
       });
     } else {
@@ -175,12 +194,8 @@ app.get('/select/user/:key/:id', function(req, res) {
 });
 
 /* 
-  - Select one user by
-  DONE 1. username and password 
-  2. id
-  - Delete user by id
   - Login method.
-  
+  - Delete/Insert user need to be verified. what sql.run returns?
 */
 
 app.get('/select/devices', function(req, res) {
