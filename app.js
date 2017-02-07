@@ -7,6 +7,8 @@ const moment    = require('moment');
 var sql       = new sqlModule('database.db');
 var security  = new secModule (sql);
 
+var logedInUsers = [];
+
 var app = express();
 app.use(express.static(path.join(__dirname, 'public')));
 
@@ -194,13 +196,29 @@ app.get('/select/user/:key/:id', function(req, res) {
 });
 
 /*
- * Delete user from database. Admin rights required.
+ * Login check to MakeSense, return json object of an user.
  */
 app.get('/login/:name/:password', function(req, res) {
   console.log ("METHOD /login");
     GetUserByNamePassword (req.params.name, req.params.password, function (user) {
       if (user != null) {
-        res.json(user.key);
+        logedInUsers.push(user);
+        res.json(user);
+      } else {
+        res.json({error:"user doesn't exist"});
+      }
+    });
+});
+
+/*
+ * Login non-os check to MakeSense, return UUID of an user. (only for non-os devices)
+ */
+app.get('/login/nonos/:name/:password', function(req, res) {
+  console.log ("METHOD /login/nonos");
+    GetUserByNamePassword (req.params.name, req.params.password, function (user) {
+      if (user != null) {
+        logedInUsers.push(user);
+        res.end("DATA\n" + user.key + "\nDATA");
       } else {
         res.json({error:"user doesn't exist"});
       }
@@ -209,6 +227,7 @@ app.get('/login/:name/:password', function(req, res) {
 
 /* 
   - Delete/Insert user need to be verified. what sql.run returns?
+  - Build login page.
 */
 
 app.get('/select/devices', function(req, res) {

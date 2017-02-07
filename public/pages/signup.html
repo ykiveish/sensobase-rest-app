@@ -9,7 +9,7 @@
     <meta name="description" content="">
     <meta name="author" content="">
 
-    <title>MakeSense</title>
+    <title>SB Admin 2 - Bootstrap Admin Theme</title>
 
     <!-- Bootstrap Core CSS -->
     <link href="../vendor/bootstrap/css/bootstrap.min.css" rel="stylesheet">
@@ -45,20 +45,18 @@
                         <form role="form">
                             <fieldset>
                                 <div class="form-group">
-                                    <input id="username" class="form-control" placeholder="E-mail" name="email" type="email" autofocus>
+                                    <input id="txtUsername" class="form-control" placeholder="Username" name="email" type="email" autofocus>
                                 </div>
                                 <div class="form-group">
-                                    <input id="password" class="form-control" placeholder="Password" name="password" type="password" value="">
+                                    <input id="txtPassword" class="form-control" placeholder="Password" name="password" type="password" value="">
                                 </div>
-                                <div class="checkbox">
-                                    <label>
-                                        <input name="remember" type="checkbox" value="Remember Me">Remember Me
-                                    </label>
+                                <div class="form-group">
+                                    <input id="txtPasswordSec" class="form-control" placeholder="Password again" name="password" type="password" value="">
                                 </div>
-                                <!-- Change this to a button or input when using this as a form -->
-                                <a id="login" class="btn btn-lg btn-success btn-block">Login</a>
-                                <br />  
-                                <a href="signup.html" class="btn btn-lg btn-warning btn-block">SignUp</a>
+                                <div class="form-group">
+                                    <input class="form-control" placeholder="Email" name="password" type="password" value="">
+                                </div>
+                                <a id="btnSignup" class="btn btn-lg btn-warning btn-block">SignUp</a>
                             </fieldset>
                         </form>
                     </div>
@@ -78,7 +76,7 @@
 
     <!-- Custom Theme JavaScript -->
     <script src="../dist/js/sb-admin-2.js"></script>
-    <script src="../js/login.js"></script>
+    <script src="../js/signup.js"></script>
 
 </body>
 
