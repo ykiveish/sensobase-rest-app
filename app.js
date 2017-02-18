@@ -225,6 +225,77 @@ app.get('/login/nonos/:name/:password', function(req, res) {
     });
 });
 
+app.get('/nonos/select/device/:key/:uuid', function(req, res) {
+  console.log ("METHOD /nonos/select/device " + req.params.uuid);
+  var reqDevice = {
+    uuid: req.params.uuid
+  };
+  security.CheckUUID(req.params.key, function (valid) {
+    if (valid) {
+      sql.CheckDeviceByUUID(reqDevice, function(err, devices) {
+        if (devices != null) {
+          if (devices.length > 0) {
+            var device = {
+              id: devices[0].id,
+              type: devices[0].type,
+              uuid: devices[0].uuid,
+              osType: devices[0].os_type,
+              osVersion: devices[0].os_version,
+              lastUpdateTs: devices[0].last_update_ts,
+              enabled: devices[0].enabled
+            };
+            res.end("DATA\n" + device.id + "\nDATA");
+          } else {
+            res.end("DATA\nNULL\nDATA");
+          }
+        } else {
+          res.end("DATA\nNULL\nDATA");
+        }
+      });  
+    } else {
+      res.end("security issue");
+    }
+  });
+});
+
+app.get('/nonos/insert/device/:key/:type/:uuid/:ostype/:osversion', function(req, res) {
+  console.log ("METHOD /nonos/insert/devices");
+  var reqDevice = {
+    uuid: req.params.uuid
+  };
+  security.CheckUUID(req.params.key, function (valid) {
+    if (valid) {
+      sql.CheckDeviceByUUID(reqDevice, function(err, devices) {
+        var device = {
+          id: 0,
+          type: req.params.type,
+          uuid: req.params.uuid,
+          osType: req.params.ostype,
+          osVersion: req.params.osversion,
+          lastUpdateTs: moment().unix(),
+          enabled: 1
+        };
+            
+        if (devices != null) {
+          if (devices.length > 0) {
+            res.end("DATA\n" + devices[0].uuid + "\nDATA");
+          } else {
+            sql.InsertDevice(device, function(err) {
+              res.end("DATA\nOK\nDATA");
+            });
+          }
+        } else {
+          sql.InsertDevice(device, function(err) {
+            res.end("DATA\nOK\nDATA");
+          });
+        }
+      });
+    } else {
+      res.end("security issue");
+    }
+  });
+});
+
 /* 
   - Delete/Insert user need to be verified. what sql.run returns?
   - Build login page.
@@ -232,10 +303,6 @@ app.get('/login/nonos/:name/:password', function(req, res) {
 
 app.get('/select/devices', function(req, res) {
   console.log ("METHOD /select/devices");
-  security.CheckUUID(req.params.key, function(valid) {
-
-  });
-
   sql.SelectDevices(function(err, devices) {
     var data = [];
     
@@ -256,7 +323,7 @@ app.get('/select/devices', function(req, res) {
 });
 
 app.get('/select/device/:id', function(req, res) {
-  console.log ("METHOD /select/devices");
+  console.log ("METHOD /select/device");
   var reqDevice = {
     id: req.params.id
   };
@@ -308,6 +375,19 @@ app.get('/update/device/:id/:osversion/:enabled', function(req, res) {
     sql.UpdateDevice(device, function(err) {
       res.json(err);
     });
+  });
+});
+
+app.get('/delete/devices/:key', function(req, res) {
+  console.log ("METHOD /delete/devices");
+  security.CheckAdmin(req.params.key, function(valid) {
+    if (valid) {
+      sql.DeleteDevices(function(err){
+        res.json(err);
+      });
+    } else {
+      res.json({error:"security issue"});
+    }
   });
 });
 

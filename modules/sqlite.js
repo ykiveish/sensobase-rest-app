@@ -176,6 +176,17 @@ SqliteDB.prototype.SelectDevice = function(device, callback) {
   });
 }
 
+SqliteDB.prototype.CheckDeviceByUUID = function(device, callback) {
+  var sql = this.db;
+  console.log ("DATABASE CheckDeviceByUUID");
+  sql.serialize(function() {
+    var query = "SELECT `id`,`type`,`uuid`,`os_type`,`os_version`,`last_update_ts`,`enabled` FROM `tbl_devices` WHERE `uuid`='" + device.uuid + "';";
+    sql.all(query, function(err, rows) {
+      callback(null, rows);
+    });
+  });
+}
+
 SqliteDB.prototype.InsertDevice = function(device, callback) {
   var sql = this.db;
   console.log ("DATABASE InsertDevice ");
@@ -192,6 +203,16 @@ SqliteDB.prototype.UpdateDevice = function(device, callback) {
   console.log ("DATABASE UpdateDevice");
   sql.serialize(function() {
     var query = "UPDATE `tbl_devices` SET `os_version`=" + device.osVersion + ", `last_update_ts`=" + device.lastUpdateTs + ", `enabled`=" + device.enabled + " WHERE `id`=" + device.id + ";";
+    sql.run(query);
+    callback({error:"OK"});
+  });
+}
+
+SqliteDB.prototype.DeleteDevices = function(callback) {
+  var sql = this.db;
+  console.log ("DATABASE DeleteDevices");
+  sql.serialize(function() {
+    var query = "DELETE FROM `tbl_devices`;";
     sql.run(query);
     callback({error:"OK"});
   });
