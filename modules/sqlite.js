@@ -38,10 +38,23 @@ function SqliteDB(dbFile) {
 
     sql.run("CREATE TABLE IF NOT EXISTS `tbl_devices` (" +
           "`id`                  INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT," +
+          "`user_id`             INTEGER NOT NULL," +
           "`type`                INTEGER NOT NULL," +
           "`uuid`                VARCHAR(64) NOT NULL," +
           "`os_type`             VARCHAR(64) NOT NULL," +
           "`os_version`          VARCHAR(64) NOT NULL," +
+          "`brand_name`          VARCHAR(64) NOT NULL," +
+          "`name`                VARCHAR(64) NOT NULL," +
+          "`description`         VARCHAR(64) NOT NULL," +
+          "`last_update_ts`      INTEGER NOT NULL," +
+          "`enabled`             TINYINT NOT NULL);");
+
+    sql.run("CREATE TABLE IF NOT EXISTS `tbl_camera_sensors` (" +
+          "`id`                  INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT," +
+          "`type`                INTEGER NOT NULL," +
+          "`device_uuid`         VARCHAR(64) NOT NULL," +
+          "`image_path`          VARCHAR(64) NOT NULL," +
+          "`image_record_path`   VARCHAR(64) NOT NULL," +
           "`last_update_ts`      INTEGER NOT NULL," +
           "`enabled`             TINYINT NOT NULL);");
   });
@@ -99,6 +112,34 @@ SqliteDB.prototype.SelectUserByNamePassword = function(user, callback) {
   });
 }
 
+SqliteDB.prototype.SelectUserByKey = function(key, callback) {
+  var sql = this.db;
+  console.log ("DATABASE SelectUserByKey");
+  sql.serialize(function() {
+    var query = "SELECT `id`, `key`, `user_name`, `password`, `ts`, `last_login_ts`, `enabled` FROM  `tbl_users` WHERE `key`='" + key + "';";
+    // console.log(query);
+    sql.all(query, function(err, rows) {
+      if (rows == null) {
+      } else {
+        if (rows.length > 0) {
+          var user = {};
+          user.key = rows[0].key;
+          user.userName = rows[0].user_name;
+          user.password = rows[0].password;
+          user.id = rows[0].id;
+          user.ts = rows[0].ts;
+          user.lastLoginTs = rows[0].last_login_ts;
+          user.enabled = rows[0].enabled;
+          callback(null, user);
+          return;
+        }
+      }
+
+      callback(null, null);
+    });
+  });
+}
+
 SqliteDB.prototype.SelectUserById = function(user, callback) {
   var sql = this.db;
   console.log ("DATABASE SelectUserById");
@@ -139,7 +180,6 @@ SqliteDB.prototype.DeleteUserById = function(id, callback) {
   sql.serialize(function() {
     var query = "DELETE FROM `tbl_users` WHERE `id`=" + id + ";";
     ret = sql.run(query);
-    console.log ("DATABASE DeleteUserById -------------------- " + ret);
     callback({error:"OK"});
   });
 }
@@ -154,13 +194,60 @@ SqliteDB.prototype.DeleteUsers = function(callback) {
   });
 }
 
+/*
+ * --------------------------------------------------------------------------------------------------
+ * sql.run("CREATE TABLE IF NOT EXISTS `tbl_devices` (" +
+          "`id`                  INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT," +
+          "`user_id`             INTEGER NOT NULL," +
+          "`type`                INTEGER NOT NULL," +
+          "`uuid`                VARCHAR(64) NOT NULL," +
+          "`os_type`             VARCHAR(64) NOT NULL," +
+          "`os_version`          VARCHAR(64) NOT NULL," +
+          "`brand_name`          VARCHAR(64) NOT NULL," +
+          "`name`                VARCHAR(64) NOT NULL," +
+          "`description`         VARCHAR(64) NOT NULL," +
+          "`last_update_ts`      INTEGER NOT NULL," +
+          "`enabled`             TINYINT NOT NULL);");
+ */
+
 SqliteDB.prototype.SelectDevices = function(callback) {
   var sql = this.db;
   console.log ("DATABASE SelectDevices");
   sql.serialize(function() {
-    var query = "SELECT `id`,`type`,`uuid`,`os_type`,`os_version`,`last_update_ts`,`enabled` FROM `tbl_devices`;";
+    var query = "SELECT `id`,`user_id`,`type`,`uuid`,`os_type`,`os_version`,`brand_name`,`name`,`description`,`last_update_ts`,`enabled` FROM `tbl_devices`;";
     sql.all(query, function(err, rows) {
       callback(null, rows);
+    });
+  });
+}
+
+SqliteDB.prototype.SelectDeviceByUserKey = function(device, callback) {
+  var sql = this.db;
+  console.log ("DATABASE SelectDeviceByUserKey");
+  sql.serialize(function() {
+    var query = "SELECT `id`,`user_id`,`type`,`uuid`,`os_type`,`os_version`,`brand_name`,`name`,`description`,`last_update_ts`,`enabled` FROM `tbl_devices` WHERE `user_id`='" + device.userId + "';";
+    // console.log(query);
+    sql.all(query, function(err, rows) {
+      if (rows == null) {
+      } else {
+        if (rows.length > 0) {
+          device.id = rows[0].id;
+          device.userId = rows[0].user_id;
+          device.type = rows[0].type;
+          device.uuid = rows[0].uuid;
+          device.osType = rows[0].os_type;
+          device.osVersion = rows[0].os_version;
+          device.lastUpdateTs = rows[0].last_update_ts;
+          device.enabled = rows[0].enabled;
+          device.brandName = rows[0].brand_name;
+          device.name = rows[0].name;
+          device.description = rows[0].description;
+          callback(null, device);
+          return;
+        }
+      }
+
+      callback(null, null);
     });
   });
 }
@@ -169,9 +256,28 @@ SqliteDB.prototype.SelectDevice = function(device, callback) {
   var sql = this.db;
   console.log ("DATABASE SelectDevice");
   sql.serialize(function() {
-    var query = "SELECT `id`,`type`,`uuid`,`os_type`,`os_version`,`last_update_ts`,`enabled` FROM `tbl_devices` WHERE `id`=" + device.id + ";";
+    var query = "SELECT `id`,`user_id`,`type`,`uuid`,`os_type`,`os_version`,`brand_name`,`name`,`description`,`last_update_ts`,`enabled` FROM `tbl_devices` WHERE `id`=" + device.id + ";";
     sql.all(query, function(err, rows) {
-      callback(null, rows);
+      if (rows == null) {
+      } else {
+        if (rows.length > 0) {
+          device.id = rows[0].id;
+          device.userId = rows[0].user_id;
+          device.type = rows[0].type;
+          device.uuid = rows[0].uuid;
+          device.osType = rows[0].os_type;
+          device.osVersion = rows[0].os_version;
+          device.lastUpdateTs = rows[0].last_update_ts;
+          device.enabled = rows[0].enabled;
+          device.brandName = rows[0].brand_name;
+          device.name = rows[0].name;
+          device.description = rows[0].description;
+          callback(null, device);
+          return;
+        }
+      }
+
+      callback(null, null);
     });
   });
 }
@@ -180,9 +286,18 @@ SqliteDB.prototype.CheckDeviceByUUID = function(device, callback) {
   var sql = this.db;
   console.log ("DATABASE CheckDeviceByUUID");
   sql.serialize(function() {
-    var query = "SELECT `id`,`type`,`uuid`,`os_type`,`os_version`,`last_update_ts`,`enabled` FROM `tbl_devices` WHERE `uuid`='" + device.uuid + "';";
+    var query = "SELECT `id`,`user_id`,`type`,`uuid`,`os_type`,`os_version`,`brand_name`,`name`,`description`,`last_update_ts`,`enabled` FROM `tbl_devices` WHERE `uuid`='" + device.uuid + "';";
+    // console.log(query);
     sql.all(query, function(err, rows) {
-      callback(null, rows);
+      if (rows == null) {
+      } else {
+        if (rows.length > 0) {
+          callback(null, true);
+          return;
+        }
+      }
+
+      callback(null, false);
     });
   });
 }
@@ -191,8 +306,8 @@ SqliteDB.prototype.InsertDevice = function(device, callback) {
   var sql = this.db;
   console.log ("DATABASE InsertDevice ");
   sql.serialize(function() {
-    var query = "INSERT INTO `tbl_devices` (`id`,`type`,`uuid`,`os_type`,`os_version`,`last_update_ts`,`enabled`) " +
-        "VALUES (NULL," + device.type + ",'" + device.uuid + "','" + device.osType + "','" + device.osVersion + "'," + device.lastUpdateTs + ",1);";
+    var query = "INSERT INTO `tbl_devices` (`id`,`user_id`,`type`,`uuid`,`os_type`,`os_version`,`brand_name`,`name`,`description`,`last_update_ts`,`enabled`) " +
+        "VALUES (NULL," + device.userId + "," + device.type + ",'" + device.uuid + "','" + device.osType + "','" + device.osVersion + "','" + device.brandName + "','New Device','Description'," + device.lastUpdateTs + ",1);";
     sql.run(query);
     callback({error:"OK"});
   });
@@ -217,6 +332,41 @@ SqliteDB.prototype.DeleteDevices = function(callback) {
     callback({error:"OK"});
   });
 }
+
+/*
+ * --------------------------------------------------------------------------------------------------
+ * sql.run("CREATE TABLE IF NOT EXISTS `tbl_camera_sensors` (" +
+          "`id`                  INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT," +
+          "`type`                INTEGER NOT NULL," +
+          "`device_id`           INTEGER NOT NULL," +
+          "`image_path`          VARCHAR(64) NOT NULL," +
+          "`image_record_path`   VARCHAR(64) NOT NULL," +
+          "`last_update_ts`      INTEGER NOT NULL," +
+          "`enabled`             TINYINT NOT NULL);");
+ */
+
+SqliteDB.prototype.SelectCameraSensor = function(sensor, callback) {
+  var sql = this.db;
+  console.log ("DATABASE SelectCameraSensor");
+  sql.serialize(function() {
+    var query = "SELECT `id`,`type`,`device_uuid`,`image_path`,`image_record_path`,`last_update_ts`,`enabled` FROM `tbl_camera_sensors` WHERE `device_uuid`=" + sensor.deviceUUID + " AND `type`=" + sensor.type + ";";
+    sql.all(query, function(err, rows) {
+      callback(null, rows);
+    });
+  });
+}
+
+SqliteDB.prototype.InsertCameraSensor = function(sensor, callback) {
+  var sql = this.db;
+  console.log ("DATABASE InsertCameraSensor");
+  sql.serialize(function() {
+    var query = "INSERT INTO `tbl_camera_sensors` (`id`,`type`,`device_uuid`,`image_path`,`image_record_path`,`last_update_ts`,`enabled`) " +
+        "VALUES (NULL," + sensor.type + ",'" + sensor.deviceUUID + "','" + sensor.inagePath + "','" + sensor.imageRecordPath + "'," + sensor.lastUpdateTs + ",1);";
+    sql.run(query);
+    callback({error:"OK"});
+  });
+}
+
 
 function SqliteFactory() {
     return SqliteDB;

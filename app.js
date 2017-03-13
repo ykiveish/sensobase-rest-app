@@ -237,10 +237,6 @@ app.get('/nonos/select/device/:key/:uuid', function(req, res) {
           if (devices.length > 0) {
             var device = {
               id: devices[0].id,
-              type: devices[0].type,
-              uuid: devices[0].uuid,
-              osType: devices[0].os_type,
-              osVersion: devices[0].os_version,
               lastUpdateTs: devices[0].last_update_ts,
               enabled: devices[0].enabled
             };
@@ -309,12 +305,16 @@ app.get('/select/devices', function(req, res) {
     for (i = 0; i < devices.length; i++) {
       var device = {
         id: devices[i].id,
+        userId: devices[i].user_id,
         type: devices[i].type,
         uuid: devices[i].uuid,
         osType: devices[i].os_type,
         osVersion: devices[i].os_version,
         lastUpdateTs: devices[i].last_update_ts,
-        enabled: devices[i].enabled
+        enabled: devices[i].enabled,
+        brandName: devices[i].brand_name,
+        name: devices[i].name,
+        description: devices[i].description
       };
       data.push(device);
     }
@@ -322,41 +322,72 @@ app.get('/select/devices', function(req, res) {
   });
 });
 
-app.get('/select/device/:id', function(req, res) {
+app.get('/select/device/:key/:uuid', function(req, res) {
   console.log ("METHOD /select/device");
   var reqDevice = {
-    id: req.params.id
+    uuid: req.params.uuid
   };
-  sql.SelectDevice(reqDevice, function(err, devices) {
-    var device = {
-      id: devices[0].id,
-      type: devices[0].type,
-      uuid: devices[0].uuid,
-      osType: devices[0].os_type,
-      osVersion: devices[0].os_version,
-      lastUpdateTs: devices[0].last_update_ts,
-      enabled: devices[0].enabled
-    };
-    res.json(device);
+  security.CheckUUID(req.params.key, function (valid) {
+    if (valid) {
+      sql.CheckDeviceByUUID(reqDevice, function(err, data) {
+        if (data == true) {
+          sql.SelectUserByKey(req.params.key, function (err, user) {
+            reqDevice.userId = user.id;
+            sql.SelectDeviceByUserKey(reqDevice, function(err, device) {
+              if (device == null) {
+                res.json({error:"no device"});
+              } else {
+                res.json(device);
+              }
+            });
+          });
+        } else {
+          res.json({error:"no device"});
+        }
+      });
+    } else {
+      res.json({error:"security issue"});
+    }
   });
 });
 
-app.get('/insert/device/:type/:uuid/:ostype/:osversion', function(req, res) {
-  console.log ("METHOD /insert/devices");
-  var device = {
-    id: 0,
-    type: req.params.type,
+app.get('/insert/device/:key/:type/:uuid/:ostype/:osversion/:brandname', function(req, res) {
+  console.log ("METHOD /insert/device");
+  var reqDevice = {
     uuid: req.params.uuid,
-    osType: req.params.ostype,
-    osVersion: req.params.osversion,
-    lastUpdateTs: moment().unix(),
-    enabled: 1
+    brandName: req.params.brandname
   };
-  sql.InsertDevice(device, function(err) {
-    res.json(err);
+  security.CheckUUID(req.params.key, function (valid) {
+    if (valid) {
+      sql.CheckDeviceByUUID(reqDevice, function(err, data) {
+        console.log ("METHOD /insert/device " + data);
+        if (data == true) {
+          res.json({info:"OK"});
+        } else {
+          sql.SelectUserByKey(req.params.key, function (err, user) {
+            var device = {
+              id: 0,
+              userId: user.id,
+              type: req.params.type,
+              uuid: req.params.uuid,
+              osType: req.params.ostype,
+              osVersion: req.params.osversion,
+              brandName: req.params.brandname,
+              lastUpdateTs: moment().unix(),
+              enabled: 1
+            };
+            sql.InsertDevice(device, function(err) {
+              res.json(device);
+            });
+          });
+        }
+      });
+    } else {
+      res.json({error:"security issue"});
+    }
   });
 });
-
+/*
 app.get('/update/device/:id/:osversion/:enabled', function(req, res) {
   console.log ("METHOD /update/device");
   var reqDevice = {
@@ -377,7 +408,7 @@ app.get('/update/device/:id/:osversion/:enabled', function(req, res) {
     });
   });
 });
-
+*/
 app.get('/delete/devices/:key', function(req, res) {
   console.log ("METHOD /delete/devices");
   security.CheckAdmin(req.params.key, function(valid) {
@@ -396,7 +427,48 @@ app.get('/update/sensor/gps/:longitude/:latitude/:deviceid', function(req, res) 
   res.end("OK");
 });
 
-app.post('/update/sensor/camera/image/:deviceid', function(req, res) {
+app.get('/insert/sensor/camera/:key/:deviceuuid/:type', function(req, res) {
+  console.log ("METHOD /update/camera/image " + req.params.deviceid);
+  var reqSensor = {
+    deviceUUID: req.params.deviceuuid,
+    type: req.params.type
+  };
+  security.CheckUUID(req.params.key, function (valid) {
+    if (valid) {
+      sql.SelectCameraSensor(reqSensor, function(err, sensors) {
+        var camera = {
+          id: 0,
+          deviceUUID: req.params.deviceuuid,
+          type: req.params.type,
+          imagePath: "",
+          imageRecordPath: "",
+          lastUpdateTs: moment().unix(),
+          enabled: 1
+        };
+
+        if (sensors != null) {
+          if (sensors.length > 0) {
+            res.json({uuid:sensors[0].device_uuid});
+          } else {
+            sql.InsertCameraSensor(camera, function(err) {
+              res.end("OK");
+            });
+          }
+        } else {
+          sql.InsertCameraSensor(camera, function(err) {
+            res.end("OK");
+          });
+        }
+      });
+    } else {
+      res.json({error:"security issue"});
+    }
+  });
+
+  res.end("OK");
+});
+
+app.get('/update/sensor/camera/image/:key/:deviceid/:type', function(req, res) {
   console.log ("METHOD /update/camera/image " + req.params.deviceid);
   res.end("OK");
 });
