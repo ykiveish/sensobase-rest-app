@@ -3,6 +3,8 @@ var SMART_PHONE = 2;
 var OS_ANDROID = "android";
 var SAMSUNG_GALAXY_S3 = "SamsungGalaxyS3";
 
+var url = "http://ec2-35-161-108-53.us-west-2.compute.amazonaws.com:8080/";
+
 var onDevicesRecieved = function (devices) {
 	if (devices.length > 0) {
 		for (i = 0; i < devices.length; i++) {
@@ -22,6 +24,11 @@ var onDevicesRecieved = function (devices) {
 				    var htmlData = this.responseText;
 				    htmlData = this.responseText.replace("[DEVICE_NAME]",xhr.device.name);
 				    htmlData = htmlData.replace("[DEVICE_DESCRIPTION]",xhr.device.description);
+				    htmlData = htmlData.replace("[DEVICE_UUID]",xhr.device.uuid);
+
+				    htmlData = htmlData.replace("[DEVICE_NAME]",xhr.device.name);
+				    htmlData = htmlData.replace("[DEVICE_DESCRIPTION]",xhr.device.description);
+				    htmlData = htmlData.replace("[DEVICE_UUID]",xhr.device.uuid);
 				    
 				    console.log(xhr.device);
 					if (xhr.device.osType == OS_ANDROID) {
@@ -38,12 +45,31 @@ var onDevicesRecieved = function (devices) {
 	}
 }
 
-var onDetailsClick = function () {
-    console.log("HELLO FROM DEVICE");
-}  
+var onAndroidDetailsClick = function () {
+    $('#android-info-modal').modal('show');
+}
+
+var onAndroidModalInfoUpdateClick = function (deviceUUID) {
+    $('#android-info-modal').modal('hide');
+
+    var name = document.getElementById('device-name').value;
+    var description = document.getElementById('device-description').value;
+
+    $.ajax({
+	    url: url + 'update/device/' + localStorage.getItem("key") + "/" + deviceUUID + "/" + name + "/" + description + "/1",
+	    type: "GET",
+	    dataType: "json",
+	    success: function (data) {
+	    	if (data.error == "OK") {
+	    		$('#generic-modal-update-sucess').modal('show');
+	    	} else {
+	    		$('#generic-modal-update-failed').modal('show');
+	    	}
+	    }
+	});
+}
 
 $(document).ready(function(){
-	var url = "http://ec2-35-161-108-53.us-west-2.compute.amazonaws.com:8080/";
 	var devices = "";
 
 	$("#logout").click(function() {

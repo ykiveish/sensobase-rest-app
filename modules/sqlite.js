@@ -313,11 +313,22 @@ SqliteDB.prototype.InsertDevice = function(device, callback) {
   });
 }
 
-SqliteDB.prototype.UpdateDevice = function(device, callback) {
+SqliteDB.prototype.UpdateDeviceInfo = function(device, callback) {
   var sql = this.db;
   console.log ("DATABASE UpdateDevice");
   sql.serialize(function() {
-    var query = "UPDATE `tbl_devices` SET `os_version`=" + device.osVersion + ", `last_update_ts`=" + device.lastUpdateTs + ", `enabled`=" + device.enabled + " WHERE `id`=" + device.id + ";";
+    var query = "UPDATE `tbl_devices` SET `name`='" + device.name + "', `description`='" + device.description + "', `enabled`=" + device.enabled + " WHERE `uuid`='" + device.uuid + "';";
+    console.log(query);
+    sql.run(query);
+    callback({error:"OK"});
+  });
+}
+
+SqliteDB.prototype.UpdateDeviceTimeStamp = function(device, callback) {
+  var sql = this.db;
+  console.log ("DATABASE UpdateDevice");
+  sql.serialize(function() {
+    var query = "UPDATE `tbl_devices` SET `last_update_ts`=" + device.lastUpdateTs + " WHERE `uuid`='" + device.uuid + "';";
     sql.run(query);
     callback({error:"OK"});
   });
@@ -349,9 +360,24 @@ SqliteDB.prototype.SelectCameraSensor = function(sensor, callback) {
   var sql = this.db;
   console.log ("DATABASE SelectCameraSensor");
   sql.serialize(function() {
-    var query = "SELECT `id`,`type`,`device_uuid`,`image_path`,`image_record_path`,`last_update_ts`,`enabled` FROM `tbl_camera_sensors` WHERE `device_uuid`=" + sensor.deviceUUID + " AND `type`=" + sensor.type + ";";
+    var query = "SELECT `id`,`type`,`device_id`,`image_path`,`image_record_path`,`last_update_ts`,`enabled` FROM `tbl_camera_sensors` WHERE `device_id`=" + sensor.deviceId + " AND `type`=" + sensor.type + ";";
     sql.all(query, function(err, rows) {
-      callback(null, rows);
+      if (rows == null) {
+      } else {
+        if (rows.length > 0) {
+          sensor.id = rows[0].id;
+          sensor.type = rows[0].type;
+          sensor.deviceId = rows[0].device_id;
+          sensor.imagePath = rows[0].image_path;
+          sensor.imageRecordPath = rows[0].image_record_path;
+          sensor.lastUpdateTs = rows[0].last_update_ts;
+          sensor.enabled = rows[0].enabled;
+          callback(null, sensor);
+          return;
+        }
+      }
+
+      callback(null, null);
     });
   });
 }
@@ -360,8 +386,8 @@ SqliteDB.prototype.InsertCameraSensor = function(sensor, callback) {
   var sql = this.db;
   console.log ("DATABASE InsertCameraSensor");
   sql.serialize(function() {
-    var query = "INSERT INTO `tbl_camera_sensors` (`id`,`type`,`device_uuid`,`image_path`,`image_record_path`,`last_update_ts`,`enabled`) " +
-        "VALUES (NULL," + sensor.type + ",'" + sensor.deviceUUID + "','" + sensor.inagePath + "','" + sensor.imageRecordPath + "'," + sensor.lastUpdateTs + ",1);";
+    var query = "INSERT INTO `tbl_camera_sensors` (`id`,`type`,`device_id`,`image_path`,`image_record_path`,`last_update_ts`,`enabled`) " +
+        "VALUES (NULL," + sensor.type + "," + sensor.deviceId + ",'" + sensor.inagePath + "','" + sensor.imageRecordPath + "'," + sensor.lastUpdateTs + ",1);";
     sql.run(query);
     callback({error:"OK"});
   });

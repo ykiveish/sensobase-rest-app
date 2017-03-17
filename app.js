@@ -360,7 +360,6 @@ app.get('/insert/device/:key/:type/:uuid/:ostype/:osversion/:brandname', functio
   security.CheckUUID(req.params.key, function (valid) {
     if (valid) {
       sql.CheckDeviceByUUID(reqDevice, function(err, data) {
-        console.log ("METHOD /insert/device " + data);
         if (data == true) {
           res.json({info:"OK"});
         } else {
@@ -387,28 +386,32 @@ app.get('/insert/device/:key/:type/:uuid/:ostype/:osversion/:brandname', functio
     }
   });
 });
-/*
-app.get('/update/device/:id/:osversion/:enabled', function(req, res) {
+
+app.get('/update/device/:key/:uuid/:name/:description/:enabled', function(req, res) {
   console.log ("METHOD /update/device");
   var reqDevice = {
-    id: req.params.id
+    uuid: req.params.uuid,
+    name: req.params.name,
+    description: req.params.description,
+    enabled: req.params.enabled
   };
-  sql.SelectDevice(reqDevice, function(err, devices) {
-    var device = {
-      id: devices[0].id,
-      type: devices[0].type,
-      uuid: devices[0].uuid,
-      osType: devices[0].os_type,
-      osVersion: req.params.osversion,
-      lastUpdateTs: moment().unix(),
-      enabled: req.params.enabled
-    };
-    sql.UpdateDevice(device, function(err) {
-      res.json(err);
-    });
+  security.CheckUUID(req.params.key, function (valid) {
+    if (valid) {
+      sql.CheckDeviceByUUID(reqDevice, function(err, data) {
+        if (data == true) {
+          sql.UpdateDeviceInfo(reqDevice, function(err) {
+            res.json(err);
+          });
+        } else {
+          res.json({error:"FAILED"});
+        }
+      });
+    } else {
+      res.json({error:"security issue"});
+    }
   });
 });
-*/
+
 app.get('/delete/devices/:key', function(req, res) {
   console.log ("METHOD /delete/devices");
   security.CheckAdmin(req.params.key, function(valid) {
@@ -435,6 +438,9 @@ app.get('/insert/sensor/camera/:key/:deviceuuid/:type', function(req, res) {
   };
   security.CheckUUID(req.params.key, function (valid) {
     if (valid) {
+
+
+
       sql.SelectCameraSensor(reqSensor, function(err, sensors) {
         var camera = {
           id: 0,
