@@ -29,6 +29,7 @@ var onDevicesRecieved = function (devices) {
 				    htmlData = htmlData.replace("[DEVICE_NAME]",xhr.device.name);
 				    htmlData = htmlData.replace("[DEVICE_DESCRIPTION]",xhr.device.description);
 				    htmlData = htmlData.replace("[DEVICE_UUID]",xhr.device.uuid);
+				    htmlData = htmlData.replace("[DEVICE_UUID]",xhr.device.uuid);
 				    
 				    console.log(xhr.device);
 					if (xhr.device.osType == OS_ANDROID) {
@@ -42,7 +43,50 @@ var onDevicesRecieved = function (devices) {
 				xhr.send();
 			}
 		}
+
+		for (i = 0; i < devices.length; i++) {
+			var device = {
+				deviceUUID: devices[i].uuid
+			};
+			$.ajax({
+			    url: url + 'select/sensor/camera/' + localStorage.getItem("key") + "/" + devices[i].uuid,
+			    type: "GET",
+			    dataType: "json",
+			    success: function (data) {
+			    	cameraSensorHandler (data, device);
+			    }
+			});
+		}
 	}
+}
+
+var cameraSensorHandler = function(sensors, device) {
+	if (sensors != null) {
+		for (j = 0; j < sensors.length; j++) {
+			document.getElementById('sensor-context-' + device.deviceUUID).innerHTML += "<div><a href=\"#\"><i class=\"fa fa-camera\" onClick=\"onCameraClick(" + sensors[j].type + "," + device.deviceUUID + ");\"></i></a></div>";
+		}
+	}
+}
+
+var onCameraClickIntervalId = 0;
+var onCloseModalWindowSensor = function() {
+	clearInterval(onCameraClickIntervalId);
+}
+
+var onCameraClick = function (cameraType, deviceUUID) {
+	$('#modal-window-sensor-info').modal('show');
+	onCameraClickIntervalId = setInterval(function () {
+		$.ajax({
+		    url: url + 'select/sensor/camera/image/' + localStorage.getItem("key") + "/" + deviceUUID + "/" + cameraType,
+		    type: "GET",
+		    cache: false,
+		    // dataType: "binary",
+		    contentType: "image/jpg",
+		    success: function (data) {
+		    	$('#modal-window-sensor-info-content-img').attr("src", "data:image/jpg;base64," + data);
+		    }
+		});
+	}, 10000);
 }
 
 var onAndroidDetailsClick = function () {

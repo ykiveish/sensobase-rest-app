@@ -3,6 +3,8 @@ var path        = require('path');
 const sqlModule = require('./modules/sqlite.js')();
 const secModule = require('./modules/security.js')();
 const moment    = require('moment');
+var fs          = require('fs');
+var shell       = require('shelljs');
                                   
 var sql       = new sqlModule('database.db');
 var security  = new secModule (sql);
@@ -431,38 +433,42 @@ app.get('/update/sensor/gps/:longitude/:latitude/:deviceid', function(req, res) 
 });
 
 app.get('/insert/sensor/camera/:key/:deviceuuid/:type', function(req, res) {
-  console.log ("METHOD /update/camera/image " + req.params.deviceid);
-  var reqSensor = {
-    deviceUUID: req.params.deviceuuid,
-    type: req.params.type
+  console.log ("METHOD /insert/sensor/camera " + req.params.deviceuuid);
+  var reqDevice = {
+    uuid: req.params.deviceuuid
   };
   security.CheckUUID(req.params.key, function (valid) {
     if (valid) {
-
-
-
-      sql.SelectCameraSensor(reqSensor, function(err, sensors) {
-        var camera = {
-          id: 0,
-          deviceUUID: req.params.deviceuuid,
-          type: req.params.type,
-          imagePath: "",
-          imageRecordPath: "",
-          lastUpdateTs: moment().unix(),
-          enabled: 1
-        };
-
-        if (sensors != null) {
-          if (sensors.length > 0) {
-            res.json({uuid:sensors[0].device_uuid});
-          } else {
-            sql.InsertCameraSensor(camera, function(err) {
-              res.end("OK");
-            });
-          }
+      sql.SelectDeviceByDeviceUUID(reqDevice, function(err, device) {
+        if (device == null) {
+          res.json({error:"no device"});
         } else {
-          sql.InsertCameraSensor(camera, function(err) {
-            res.end("OK");
+          var reqSensor = {
+            deviceId: device.id,
+            type: req.params.type
+          };
+          sql.SelectCameraSensor(reqSensor, function(err, sensor) {
+            if (sensor == null) {
+              var camera = {
+                id: 0,
+                deviceId: device.id,
+                type: req.params.type,
+                imagePath: req.params.key + "/" + req.params.deviceuuid + "/camera/image",
+                imageRecordPath: req.params.key + "/" + req.params.deviceuuid + "/camera/image_record",
+                lastUpdateTs: moment().unix(),
+                enabled: 1
+              };
+              try {
+                sql.InsertCameraSensor(camera, function(err) {
+                  res.json(err);
+                });
+              } catch (err) {
+                console.log(err);
+                res.json(err);
+              }
+            } else {
+              res.json({error:"SENSOR"});
+            }
           });
         }
       });
@@ -470,13 +476,119 @@ app.get('/insert/sensor/camera/:key/:deviceuuid/:type', function(req, res) {
       res.json({error:"security issue"});
     }
   });
-
-  res.end("OK");
 });
 
-app.get('/update/sensor/camera/image/:key/:deviceid/:type', function(req, res) {
-  console.log ("METHOD /update/camera/image " + req.params.deviceid);
-  res.end("OK");
+app.get('/select/sensor/camera/:key/:deviceuuid', function(req, res) {
+  console.log ("METHOD /select/sensor/camera " + req.params.deviceuuid);
+  var reqDevice = {
+    uuid: req.params.deviceuuid
+  };
+  security.CheckUUID(req.params.key, function (valid) {
+    if (valid) {
+      sql.SelectDeviceByDeviceUUID(reqDevice, function(err, device) {
+        if (device == null) {
+          res.json({error:"no device"});
+        } else {
+          sql.SelectCameraSensors(device.id, function(err, sensors) {
+            if (sensors == null) {
+              res.json({error:"no sensor"});
+            } else {
+              res.json(sensors);
+            }
+          });
+        }
+      });
+    } else {
+      res.json({error:"security issue"});
+    }
+  });
+});
+
+function rawBody(req, res, next) {
+  var chunks = [];
+
+  req.on('data', function(chunk) {
+    chunks.push(chunk);
+  });
+
+  req.on('end', function() {
+    var buffer = Buffer.concat(chunks);
+    req.bodyLength = buffer.length;
+    req.rawBody = buffer;
+    next();
+  });
+
+  req.on('error', function (err) {
+    console.log(err);
+    res.status(500);
+  });
+}
+
+app.post('/update/sensor/camera/image/:key/:deviceuuid/:type', rawBody, function(req, res) {
+  console.log ("METHOD /update/camera/image " + req.params.deviceuuid);
+  if (req.rawBody && req.bodyLength > 0) {
+    security.CheckUUID(req.params.key, function (valid) {
+      if (valid) {
+        var reqDevice = {
+          uuid: req.params.deviceuuid
+        };
+        sql.SelectDeviceByDeviceUUID(reqDevice, function(err, device) {
+          if (device == null) {
+          } else {
+            console.log ("METHOD upload-image " + device);
+            sql.SelectCameraSensorByType(device.id, req.params.type, function(err, sensors) {
+              if (sensors == null) {
+              } else {
+                var path = "sensors/fs/" + sensors[0].imagePath;
+                console.log ("PATH " + path);
+                shell.mkdir('-p', path);
+
+                fs.writeFile(path + "/last.jpeg", req.rawBody, function (err) {
+                  if (err) {
+                    console.log ("ERROR " + err);
+                  } else {
+                    console.log ("IMAGE SAVED ");
+                  }
+                });
+              }
+            });
+          }
+        });
+      } else {
+        res.json({error:"security issue"});
+      }
+    });
+    res.send(200, {status: 'OK'});
+  } else {
+    res.json({error:"upload issue"});
+  }
+});
+
+app.get('/select/sensor/camera/image/:key/:deviceuuid/:type', function (req, res){
+  security.CheckUUID(req.params.key, function (valid) {
+    if (valid) {
+      var reqDevice = {
+        uuid: req.params.deviceuuid
+      };
+      sql.SelectDeviceByDeviceUUID(reqDevice, function(err, device) {
+        if (device == null) {
+        } else {
+          sql.SelectCameraSensorByType(device.id, req.params.type, function(err, sensors) {
+            if (sensors == null) {
+            } else {
+              var path = "sensors/fs/" + sensors[0].imagePath;
+              var img = fs.readFileSync(path + "/last.jpeg");
+              var buff = new Buffer(img).toString('base64')
+              res.writeHead(200, {'Content-Type': 'image/jpg' });
+              res.end(buff);
+            }
+          });
+        }
+      });
+    } else {
+      res.json({error:"security issue"});
+    }
+  });
 });
 
 var server = app.listen(8080, function(){
