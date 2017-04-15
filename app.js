@@ -453,8 +453,8 @@ app.get('/insert/sensor/camera/:key/:deviceuuid/:type', function(req, res) {
                 id: 0,
                 deviceId: device.id,
                 type: req.params.type,
-                imagePath: req.params.key + "/" + req.params.deviceuuid + "/camera/image",
-                imageRecordPath: req.params.key + "/" + req.params.deviceuuid + "/camera/image_record",
+                imagePath: req.params.key + "/" + req.params.deviceuuid + "/camera/" + req.params.type + "/image",
+                imageRecordPath: req.params.key + "/" + req.params.deviceuuid + "/camera/" + req.params.type + "/image_record",
                 lastUpdateTs: moment().unix(),
                 enabled: 1
               };
@@ -467,7 +467,8 @@ app.get('/insert/sensor/camera/:key/:deviceuuid/:type', function(req, res) {
                 res.json(err);
               }
             } else {
-              res.json({error:"SENSOR"});
+              // TODO - Remove this error text (do use something minigfull)
+              res.json({error:"Sensor exist in DB"});
             }
           });
         }
@@ -493,7 +494,12 @@ app.get('/select/sensor/camera/:key/:deviceuuid', function(req, res) {
             if (sensors == null) {
               res.json({error:"no sensor"});
             } else {
-              res.json(sensors);
+              sensors.deviceUUID = req.params.deviceuuid;
+              var responseData = {
+                cameras: sensors,
+                deviceUUID: req.params.deviceuuid
+              }
+              res.json(responseData);
             }
           });
         }
@@ -535,12 +541,10 @@ app.post('/update/sensor/camera/image/:key/:deviceuuid/:type', rawBody, function
         sql.SelectDeviceByDeviceUUID(reqDevice, function(err, device) {
           if (device == null) {
           } else {
-            console.log ("METHOD upload-image " + device);
             sql.SelectCameraSensorByType(device.id, req.params.type, function(err, sensors) {
               if (sensors == null) {
               } else {
                 var path = "sensors/fs/" + sensors[0].imagePath;
-                console.log ("PATH " + path);
                 shell.mkdir('-p', path);
 
                 fs.writeFile(path + "/last.jpeg", req.rawBody, function (err) {
@@ -564,7 +568,8 @@ app.post('/update/sensor/camera/image/:key/:deviceuuid/:type', rawBody, function
   }
 });
 
-app.get('/select/sensor/camera/image/:key/:deviceuuid/:type', function (req, res){
+app.get('/select/sensor/camera/image/:key/:deviceuuid/:type', function (req, res) {
+  console.log ("METHOD /select/sensor/camera/image " + req.params.deviceuuid);
   security.CheckUUID(req.params.key, function (valid) {
     if (valid) {
       var reqDevice = {

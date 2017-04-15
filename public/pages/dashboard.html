@@ -109,15 +109,18 @@
         </div>    
         <!-- /#page-wrapper -->
 
-        <div class="modal fade" id="modal-window-sensor-info" tabindex="-1" role="dialog" aria-labelledby="android-info-modal-label" aria-hidden="true">
+        <div class="modal fade" id="modal-window-sensor-info" onClick="onCloseModalWindowSensor()" tabindex="-1" role="dialog" aria-labelledby="android-info-modal-label" aria-hidden="true">
             <div class="modal-dialog">
                 <div class="modal-content">
                     <div class="modal-header">
-                        <button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
-                        <h4 class="modal-title" id="android-info-modal-label" id="modal-window-sensor-info-title">Camera</h4>
+                        <button type="button" onClick="onCloseModalWindowSensor()" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
+                        <h4 class="modal-title" id="modal-window-sensor-info-title">Camera</h4>
                     </div>
                     <div class="modal-body" id="modal-window-sensor-info-content">
                         <img id="modal-window-sensor-info-content-img" width="100%"/>
+                    </div>
+                    <div class="modal-body" align="center">
+                        <img id="modal-window-sensor-info-content-img-progress-bar" src="../images/progress.gif" width="100px"/>
                     </div>
                     <div class="modal-footer">
                         <button onClick="onCloseModalWindowSensor()" type="button" class="btn btn-default" data-dismiss="modal">Close</button>
