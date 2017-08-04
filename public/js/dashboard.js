@@ -8,6 +8,124 @@ var url = "http://ec2-35-161-108-53.us-west-2.compute.amazonaws.com:8080/";
 var Devices;
 var ModulesDownloadCount = 0;
 var SmartPhoneHTML = "";
+var UserDEVKey = localStorage.getItem("key");
+
+function Storage() {
+	self = this;
+	
+	this.Sensors = {}; // Dictionary of sensors
+	this.Devices = {}; // Dictionary of devices
+	
+	return this;
+}
+
+function BasicSensors(html) {
+	self = this;
+	
+	this.Canvas = html;
+	this.Items = {
+		"Temperature": function () {
+			var CurrentCanvas = self.Canvas;
+			CurrentCanvas = CurrentCanvas.replace("[ICON]","../images/basic_sensors/temperature_good.png");
+			return CurrentCanvas;
+		},
+		"Humidity": function () {
+			var CurrentCanvas = self.Canvas;
+			CurrentCanvas = CurrentCanvas.replace("[ICON]","../images/basic_sensors/humidity.png");
+			return CurrentCanvas;
+		},
+		"Luminance": function () {
+			var CurrentCanvas = self.Canvas;
+			CurrentCanvas = CurrentCanvas.replace("[ICON]","../images/basic_sensors/luminance.png");
+			return CurrentCanvas;
+		},
+		"Switch": function () {
+			var CurrentCanvas = self.Canvas;
+			CurrentCanvas = CurrentCanvas.replace("[ICON]","../images/basic_sensors/switch.png");
+			return CurrentCanvas;
+		},
+		"Buzzer": function () {
+			var CurrentCanvas = self.Canvas;
+			CurrentCanvas = CurrentCanvas.replace("[ICON]","../images/basic_sensors/buzzer_pos.png");
+			return CurrentCanvas;
+		}
+	}
+	
+	this.GetSensor = function (type) {
+		switch (type) {
+			case 1:
+				return self.Items.Temperature();
+			break;
+			case 2:
+				return self.Items.Humidity();
+			break;
+			case 3:
+				return self.Items.Luminance();
+			break;
+			case 4:
+				return self.Items.Switch();
+			break;
+			case 5:
+				return self.Items.Buzzer();
+			break;
+		}
+	}
+	
+	return this;
+}
+
+var objBasicSensors;
+var objStorage = Storage();
+
+if (!!window.EventSource) {
+	var source = new EventSource(url + "register_devices_update_event/" + UserDEVKey);
+	console.log ((new Date()) + " #> Registered to sensor stream [" + UserDEVKey + "]");
+} else {
+	console.log ((new Date()) + " #> [ERROR] Resister to sensor stream [" + UserDEVKey + "]");
+}
+
+source.addEventListener('message', function(e) {
+	// console.log((new Date()) + " #> " + e.data);
+	
+	// Add sensors and device to local storage.
+	if (e.data != null) {
+		var jsonData = JSON.parse(e.data);
+		if (jsonData.sensors != null) {
+			objStorage.Devices[jsonData.device] = jsonData;
+			for (i = 0; i < jsonData.sensors.length; i++) {
+				if (objStorage.Sensors[jsonData.sensors[i].id] === undefined) {
+					// Add new UI object
+					if (objBasicSensors != null) {
+						var htmlData = objBasicSensors.GetSensor(jsonData.sensors[i].type);
+						htmlData = htmlData.replace("[NAME]", jsonData.sensors[i].name);
+						htmlData = htmlData.replace("[ID]", jsonData.sensors[i].id);
+						htmlData = htmlData.replace("[ID]", jsonData.sensors[i].id);
+						htmlData = htmlData.replace("[VALUE]", jsonData.sensors[i].value);
+						document.getElementById('device_context').innerHTML += htmlData;
+						// console.log(htmlData);
+					}
+				} else {
+					// Update UI object
+					document.getElementById(jsonData.sensors[i].id + '_name').innerHTML = jsonData.sensors[i].name;
+					document.getElementById(jsonData.sensors[i].id + '_value').innerHTML = jsonData.sensors[i].value;
+				}
+				objStorage.Sensors[jsonData.sensors[i].id] = jsonData.sensors[i];
+			}
+		}
+	}
+	
+}, false);
+
+source.addEventListener('open', function(e) {
+	console.log((new Date()) + " #> OPEN");
+}, false);
+
+source.addEventListener('error', function(e) {
+	console.log((new Date()) + " #> ERROR");
+	if (e.readyState == EventSource.CLOSED) {
+
+	}
+}, false);
 
 var onModulesDownloaded = function () {
 	for (i = 0; i < Devices.length; i++) {
@@ -96,6 +214,7 @@ var onCloseModalWindowSensor = function() {
 var onGetImage = function (data) {
 	$('#modal-window-sensor-info-content-img').attr("src", "data:image/jpg;base64," + data);
 	$("#modal-window-sensor-info-content-img-progress-bar").hide();
+	console.log("Binded Image ...");
 
 	if (GetImageFlag == 1) {
 		GetImage();
@@ -104,6 +223,7 @@ var onGetImage = function (data) {
 
 var GetImage = function () {
 	$("#modal-window-sensor-info-content-img-progress-bar").show();
+	console.log("Request Image ...");
 	$.ajax({
 	    url: url + 'select/sensor/camera/image/' + localStorage.getItem("key") + "/" + GetImageDeviceUUID + "/" + GetImageCameraType,
 	    type: "GET",
@@ -152,8 +272,16 @@ $(document).ready(function() {
 		localStorage.removeItem("key");
 		window.location.href = "../index.html";
 	});
-
+	
 	$.ajax({
+		url: 'modules/basic_sensor.html',
+		type: "GET",
+		success: function (data) {
+			objBasicSensors = BasicSensors(data);
+		}
+	});
+
+	/*$.ajax({
 	    url: url + 'select/devices',
 	    type: "GET",
 	    dataType: "json",
@@ -161,7 +289,7 @@ $(document).ready(function() {
 	    	Devices = data;
 	    	onDevicesRecieved();
 	    }
-	});
+	});*/
 
 	$("#modal-window-sensor-info-content-img-progress-bar").hide();
 });
