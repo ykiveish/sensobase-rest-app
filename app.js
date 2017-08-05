@@ -45,6 +45,7 @@ wsServer.on('request', function(request) {
 			for (i = 0; i < jsonData.sensors.length; i++) {
 				jsonData.sensors[i].deviceId = jsonData.device;
 				jsonData.sensors[i].name = "Temporary";
+				jsonData.sensors[i].timeStamp = new Date();
 				sensorListDict[jsonData.sensors[i].id] = jsonData.sensors[i];
 			}
 
@@ -313,14 +314,28 @@ app.get('/select/user/:key/:id', function(req, res) {
  */
 app.get('/login/:name/:password', function(req, res) {
 	console.log ("METHOD /login");
-		GetUserByNamePassword (req.params.name, req.params.password, function (user) {
-			if (user != null) {
-				logedInUsers.push(user);
-				res.json(user);
-			} else {
-				res.json({error:"user doesn't exist"});
-			}
-		});
+	GetUserByNamePassword (req.params.name, req.params.password, function (user) {
+		if (user != null) {
+			logedInUsers.push(user);
+			res.json(user);
+		} else {
+			res.json({error:"user doesn't exist"});
+		}
+	});
+});
+
+/*
+ * Same as Login but without saving user.
+ */
+app.get('/fastlogin/:name/:password', function(req, res) {
+	console.log ("METHOD /login");
+	GetUserByNamePassword (req.params.name, req.params.password, function (user) {
+		if (user != null) {
+			res.json(user);
+		} else {
+			res.json({error:"user doesn't exist"});
+		}
+	});
 });
 
 /*
@@ -328,14 +343,14 @@ app.get('/login/:name/:password', function(req, res) {
  */
 app.get('/login/nonos/:name/:password', function(req, res) {
 	console.log ("METHOD /login/nonos");
-		GetUserByNamePassword (req.params.name, req.params.password, function (user) {
-			if (user != null) {
-				logedInUsers.push(user);
-				res.end("DATA\n" + user.key + "\nDATA");
-			} else {
-				res.json({error:"user doesn't exist"});
-			}
-		});
+	GetUserByNamePassword (req.params.name, req.params.password, function (user) {
+		if (user != null) {
+			logedInUsers.push(user);
+			res.end("DATA\n" + user.key + "\nDATA");
+		} else {
+			res.json({error:"user doesn't exist"});
+		}
+	});
 });
 
 app.get('/nonos/select/device/:key/:uuid', function(req, res) {

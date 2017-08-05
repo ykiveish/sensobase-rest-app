@@ -74,7 +74,32 @@ function BasicSensors(html) {
 	return this;
 }
 
-var objBasicSensors;
+function Sensors () {
+	self = this;
+	
+	this.objBasicSensors;
+	/*
+	 * [001 - 100] Basic sensors, for example temperature or switch.
+	 * [101 - 110] Cameras.
+	 */
+	this.GetSensor = function (type) {
+		if (type > 0 && type < 101) {
+			if (self.objBasicSensors != null) {
+				return self.objBasicSensors.GetSensor(type);
+			} else {
+				return "ERROR";
+			}
+		}
+	}
+	
+	this.SetBasicSensors = function (basicSensors) {
+		self.objBasicSensors = basicSensors;
+	}
+	
+	return this;
+}
+
+var objSensors = Sensors();
 var objStorage = Storage();
 
 if (!!window.EventSource) {
@@ -84,9 +109,7 @@ if (!!window.EventSource) {
 	console.log ((new Date()) + " #> [ERROR] Resister to sensor stream [" + UserDEVKey + "]");
 }
 
-source.addEventListener('message', function(e) {
-	// console.log((new Date()) + " #> " + e.data);
-	
+source.addEventListener('message', function(e) {	
 	// Add sensors and device to local storage.
 	if (e.data != null) {
 		var jsonData = JSON.parse(e.data);
@@ -95,14 +118,13 @@ source.addEventListener('message', function(e) {
 			for (i = 0; i < jsonData.sensors.length; i++) {
 				if (objStorage.Sensors[jsonData.sensors[i].id] === undefined) {
 					// Add new UI object
-					if (objBasicSensors != null) {
-						var htmlData = objBasicSensors.GetSensor(jsonData.sensors[i].type);
+					if (objSensors != null) {
+						var htmlData = objSensors.GetSensor(jsonData.sensors[i].type);
 						htmlData = htmlData.replace("[NAME]", jsonData.sensors[i].name);
-						htmlData = htmlData.replace("[ID]", jsonData.sensors[i].id);
-						htmlData = htmlData.replace("[ID]", jsonData.sensors[i].id);
 						htmlData = htmlData.replace("[VALUE]", jsonData.sensors[i].value);
+						htmlData = htmlData.replace("[ID]", jsonData.sensors[i].id);
+						htmlData = htmlData.replace("[ID]", jsonData.sensors[i].id);
 						document.getElementById('device_context').innerHTML += htmlData;
-						// console.log(htmlData);
 					}
 				} else {
 					// Update UI object
@@ -113,7 +135,6 @@ source.addEventListener('message', function(e) {
 			}
 		}
 	}
-	
 }, false);
 
 source.addEventListener('open', function(e) {
@@ -277,7 +298,7 @@ $(document).ready(function() {
 		url: 'modules/basic_sensor.html',
 		type: "GET",
 		success: function (data) {
-			objBasicSensors = BasicSensors(data);
+			objSensors.SetBasicSensors(BasicSensors(data));
 		}
 	});
 
