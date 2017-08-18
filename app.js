@@ -5,7 +5,7 @@ const secModule = require('./modules/security.js')();
 const moment    = require('moment');
 var fs          = require('fs');
 var shell       = require('shelljs');
-																	
+
 var sql       = new sqlModule('database.db');
 var security  = new secModule (sql);
 
@@ -16,6 +16,8 @@ var logedInUsers = [];
 
 var app = express();
 app.use(express.static(path.join(__dirname, 'public')));
+
+require('./modules/basic_sensors.js')(app, security, sql);
 
 var server = http.createServer(function(request, response) {});
 server.listen(8181, function() { });
@@ -727,3 +729,9 @@ app.get('/select/sensor/camera/image/:key/:deviceuuid/:type', function (req, res
 var server = app.listen(8080, function(){
 	console.log('Server listening on port 8080');
 });
+
+/*
+ * TODO SECURITY
+ * - [HIGH] When quering DB with user key and user id we must check if key can be used for this user id.
+ * - [MID] Sql injection is not dealed.
+ */

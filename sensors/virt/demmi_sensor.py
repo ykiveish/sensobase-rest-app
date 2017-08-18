@@ -6,27 +6,34 @@ import time
 import json
 
 Counter = 1
-TimerState = 0;
-State = 'IDLE';
-UserDevKey = "ac6de837-7863-72a9-c789-a0aae7e9d93e";
-UserName = "ykiveish";
-Password = "1234";
-WebSocketServer = "ws://ec2-35-161-108-53.us-west-2.compute.amazonaws.com:8181/";
-RESTApiServer = "http://ec2-35-161-108-53.us-west-2.compute.amazonaws.com:8080/";
+TimerState = 0
+State = 'IDLE'
 
+UserDevKey = "ac6de837-7863-72a9-c789-a0aae7e9d93e"
+UserName = "ykiveish"
+Password = "1234"
+
+Type 		= 1000
+UUID 		= "ac6de837-7863-72a9-c789-b0aae7e9d93e"
+OSType 		= "Linux"
+OSVersion 	= "Unknown"
+BrandName 	= "Demmi_Device"
+
+WebSocketServer = "ws://ec2-35-161-108-53.us-west-2.compute.amazonaws.com:8181/"
+RESTApiServer = "http://ec2-35-161-108-53.us-west-2.compute.amazonaws.com:8080/"
 
 class Sensor:
-	Id 	  = 0
+	UUID  = 0
 	Type  = 0
 	Value = 0
 	
 	def __init__(self, id, type):
-		self.Id = id
+		self.UUID = id
 		self.Type = type
-
 Sensors = []
 
 def GetRequest (url):
+	print url
 	return urllib2.urlopen(url).read()
 	
 def on_message (ws, message):
@@ -57,9 +64,29 @@ def GetAccess ():
 	if ('error' in jsonData):
 		return False;
 	else:
-		UserDevKey = jsonData['key'];
+		UserDevKey = jsonData['key']
 		return True;
 
+def InsertDevice ():
+	global UserDevKey
+	global Type
+	global UUID
+	global OSType
+	global OSVersion
+	global BrandName
+	
+	data = GetRequest(RESTApiServer + "insert/device/" + UserDevKey + "/" + str(Type) + "/" + UUID + "/" + OSType + "/" + OSVersion + "/" + BrandName);
+	jsonData = json.loads(data)
+	
+	if ('info' in jsonData):
+		return True;
+	else:
+		return False;
+
+def InsertSesnor (sensor):
+	data = GetRequest(RESTApiServer + "insert/sensor/basic/" + UserDevKey + "/" + UUID + "/" + sensor.UUID + "/" + str(sensor.Type) + "/" + str(sensor.Value));
+	jsonData = json.loads(data)
+	
 def IdleState ():
 	global TimerState
 	global State
@@ -75,13 +102,17 @@ def GetAccessSatate ():
 	global State
 	print "GetAccessSatate"
 	if True == GetAccess ():
-		State = 'PUBLISH';
+		State = 'PUBLISH'
 	else:
-		State = 'IDLE';
+		State = 'IDLE'
 
+# /insert/device/:key/:type/:uuid/:ostype/:osversion/:brandname 
 def PublishSensorState ():
 	global State
 	print "PublishSensorState"
+	
+	InsertDevice()
+	
 	State = 'UPDATE'
 
 def UpdateSensorState ():
@@ -106,12 +137,15 @@ States = {
 
 def main():
 	global Sesnors
+
+	Sensors.append(Sensor("ac6de837-7863-72a9-c789-a0aae7e9d931", 1))
+	Sensors.append(Sensor("ac6de837-7863-72a9-c789-a0aae7e9d932", 2))
+	Sensors.append(Sensor("ac6de837-7863-72a9-c789-a0aae7e9d933", 3))
+	Sensors.append(Sensor("ac6de837-7863-72a9-c789-a0aae7e9d934", 4))
+	Sensors.append(Sensor("ac6de837-7863-72a9-c789-a0aae7e9d935", 5))
 	
-	Sensors.append(Sensor(5701, 1))
-	Sensors.append(Sensor(5702, 2))
-	Sensors.append(Sensor(5703, 3))
-	Sensors.append(Sensor(5704, 4))
-	Sensors.append(Sensor(5705, 5))
+	for item in Sensors:
+		InsertSesnor (item)
 	
 	#while True:
 	#	Method = States[State]
