@@ -14,10 +14,23 @@ var http            = require('http');
 
 var logedInUsers = [];
 
+var KnownOS = ["Linux", "Windows", "Mac", "iOS", "Android", "NoOS"];
+var KnownBrandName = ["MakeSense-Virtual", "MakeSense"];
+
 var app = express();
 app.use(express.static(path.join(__dirname, 'public')));
 
-require('./modules/basic_sensors.js')(app, security, sql);
+var IOTClients = [];
+var IOTClientsTable = {};
+var WebSSEClients = {};
+
+var SensorListDictSSE = {};
+var DeviceListDictSSE = {};
+
+var UserDevKey = "ac6de837-7863-72a9-c789-a0aae7e9d93e";
+
+require('./modules/devices.js')(app, security, sql);
+require('./modules/basic_sensors.js')(app, security, sql, IOTClients, IOTClientsTable);
 
 var server = http.createServer(function(request, response) {});
 server.listen(8181, function() { });
@@ -26,42 +39,88 @@ wsServer = new WebSocketServer({
 	httpServer: server
 });
 
-var IOTClients = [];
-var WebSSEClients = {};
-var sensorListDict = {};
-var deviceListDict = {};
+function LocalStorage (sql) {
+	self = this;
+	
+	this.DB = sql;
+	this.UserLoaded = false;
+	
+	this.SensorListDictWebSocket = {};
+	this.DeviceListDictWebSocket = {};
+	this.UserDictionary = {};
+	
+	this.LoadUsers = function () {
+		DB.SelectUsers (function(error, users) {
+			for (i = 0; i < users.length; i++) {
+				var user = {
+					id: users[i].id,
+					key: users[i].key,
+					userName: users[i].user_name,
+					password: users[i].password,
+					ts: users[i].ts,
+					lastLoginTs: users[i].last_login_ts,
+					enabled: users[i].enabled
+				};
+				self.UserDictionary[users[i].key] = user;
+			}
+			
+			self.UserLoaded = true;
+		});
+	}
+	
+	this.LoadSensors = function (key) {
+		
+	}
+	
+	return this;
+}
+var Local = LocalStorage(sql);
 
-var UserDevKey = "ac6de837-7863-72a9-c789-a0aae7e9d93e";
+Local.LoadUsers ();
+
+function StatusHandlerFunc() {
+	console.log ("# *** Server status ***");
+	console.log ("# User DB Loaded - " + Local.UserLoaded);
+	console.log ("# *********************");
+}
+
+var StatusHandler = setInterval (StatusHandlerFunc, 10000);
+
+
 
 // WebSocket server
 wsServer.on('request', function(request) {
 	var connection = request.accept(null, request.origin);
 	var index = IOTClients.push(connection) - 1;
 	
+	IOTClientsTable[request.httpRequest.headers.uuid] = index;
+	
 	connection.on('message', function(message) {
 		if (message.type === 'utf8') {
-			console.log ((new Date()) + " #> Message (" + message.utf8Data + ") ...");
+			// console.log ((new Date()) + " #> Message (" + message.utf8Data + ") ...");
 			connection.LastMessageData = message.utf8Data;
 			jsonData = JSON.parse(message.utf8Data);
-
-			for (i = 0; i < jsonData.sensors.length; i++) {
-				jsonData.sensors[i].deviceId = jsonData.device;
-				jsonData.sensors[i].name = "Temporary";
-				jsonData.sensors[i].timeStamp = new Date();
-				sensorListDict[jsonData.sensors[i].id] = jsonData.sensors[i];
+			
+			// Verifing the key from this message.
+			var MassageKey = jsonData.key;
+			if (Local.UserDictionary[MassageKey] === undefined) {
+				console.log((new Date()) + " [ERROR] User with KEY " + MassageKey + " is NOT DEFINED.");
+				return;
 			}
-
-			WebConnection = WebSSEClients[UserDevKey];
+			
+			// Saving device in server local database for monitoring.
+			Local.DeviceListDictWebSocket[jsonData.device.uuid] = jsonData.device;
+			
+			// Sending data to application. No check needed application will use data it needs. (user key was verified)
+			WebConnection = WebSSEClients[jsonData.key];
 			if (WebConnection != undefined) {
 				console.log ((new Date()) + " #> Sending data to web client ...");
-				// WebConnection.session.write("data: " + message.utf8Data + "\n\n");
 				WebConnection.session.write("data: " + JSON.stringify(jsonData) + "\n\n");
 			}
 
-			// connection.sendUTF("BONJOOR");
 		} else if (message.type === 'binary') {
 			console.log((new Date()) + 'Received Binary Message of ' + message.binaryData.length + ' bytes');
-			// connection.sendBytes(message.binaryData);
+			connection.sendBytes(message.binaryData);
 		}
 	});
 
@@ -69,32 +128,6 @@ wsServer.on('request', function(request) {
 		console.log ((new Date()) + " #> Session closed ...");
 		IOTClients.splice(index, 1);
 	});
-});
-
-app.get('/test_sse', function(req, res) {
-	WebConnection = WebSSEClients[UserDevKey];
-	if (WebConnection != undefined) {
-		var data = "HELLO";
-		WebConnection.session.write("data: " + data);
-		WebConnection.session.write("\n\n");
-		console.log ((new Date()) + " #> Sending data to web client ...");
-	}
-
-	res.end("OK");
-});
-
-app.get('/test_json/:json', function(req, res) {
-	console.log ("METHOD /select/users " + req.params.json);
-	jsonData = JSON.parse(req.params.json);
-
-	console.log(jsonData.device);
-	console.log(jsonData.sensors);
-
-	for (i = 0; i < jsonData.sensors.length; i++) {
-		console.log(jsonData.sensors[i].id);
-	}
-
-	res.end(req.params.json);
 });
 
 app.get('/register_devices_update_event/:key', function(req, res) {
@@ -126,6 +159,32 @@ app.get('/set/wan/ip/:ip', function(req, res) {
 
 app.get('/get/wan/ip', function(req, res) {
 	res.end(ipAddress);
+});
+
+app.get('/test_sse', function(req, res) {
+	WebConnection = WebSSEClients[UserDevKey];
+	if (WebConnection != undefined) {
+		var data = "HELLO";
+		WebConnection.session.write("data: " + data);
+		WebConnection.session.write("\n\n");
+		console.log ((new Date()) + " #> Sending data to web client ...");
+	}
+
+	res.end("OK");
+});
+
+app.get('/test_json/:json', function(req, res) {
+	console.log ("METHOD /select/users " + req.params.json);
+	jsonData = JSON.parse(req.params.json);
+
+	console.log(jsonData.device);
+	console.log(jsonData.sensors);
+
+	for (i = 0; i < jsonData.sensors.length; i++) {
+		console.log(jsonData.sensors[i].id);
+	}
+
+	res.end(req.params.json);
 });
 
 app.get('/select/users/:key', function(req, res) {
@@ -427,134 +486,6 @@ app.get('/nonos/insert/device/:key/:type/:uuid/:ostype/:osversion', function(req
 	- Build login page.
 */
 
-app.get('/select/devices', function(req, res) {
-	console.log ("METHOD /select/devices");
-	sql.SelectDevices(function(err, devices) {
-		var data = [];
-		
-		for (i = 0; i < devices.length; i++) {
-			var device = {
-				id: devices[i].id,
-				userId: devices[i].user_id,
-				type: devices[i].type,
-				uuid: devices[i].uuid,
-				osType: devices[i].os_type,
-				osVersion: devices[i].os_version,
-				lastUpdateTs: devices[i].last_update_ts,
-				enabled: devices[i].enabled,
-				brandName: devices[i].brand_name,
-				name: devices[i].name,
-				description: devices[i].description
-			};
-			data.push(device);
-		}
-		res.json(data);
-	});
-});
-
-app.get('/select/device/:key/:uuid', function(req, res) {
-	console.log ("METHOD /select/device");
-	var reqDevice = {
-		uuid: req.params.uuid
-	};
-	security.CheckUUID(req.params.key, function (valid) {
-		if (valid) {
-			sql.CheckDeviceByUUID(reqDevice, function(err, data) {
-				if (data == true) {
-					sql.SelectUserByKey(req.params.key, function (err, user) {
-						reqDevice.userId = user.id;
-						sql.SelectDeviceByUserKey(reqDevice, function(err, device) {
-							if (device == null) {
-								res.json({error:"no device"});
-							} else {
-								res.json(device);
-							}
-						});
-					});
-				} else {
-					res.json({error:"no device"});
-				}
-			});
-		} else {
-			res.json({error:"security issue"});
-		}
-	});
-});
-
-app.get('/insert/device/:key/:type/:uuid/:ostype/:osversion/:brandname', function(req, res) {
-	console.log ("METHOD /insert/device");
-	var reqDevice = {
-		uuid: req.params.uuid,
-		brandName: req.params.brandname
-	};
-	security.CheckUUID(req.params.key, function (valid) {
-		if (valid) {
-			sql.CheckDeviceByUUID(reqDevice, function(err, data) {
-				if (data == true) {
-					res.json({info:"OK"});
-				} else {
-					sql.SelectUserByKey(req.params.key, function (err, user) {
-						var device = {
-							id: 0,
-							userId: user.id,
-							type: req.params.type,
-							uuid: req.params.uuid,
-							osType: req.params.ostype,
-							osVersion: req.params.osversion,
-							brandName: req.params.brandname,
-							lastUpdateTs: moment().unix(),
-							enabled: 1
-						};
-						sql.InsertDevice(device, function(err) {
-							res.json(device);
-						});
-					});
-				}
-			});
-		} else {
-			res.json({error:"security issue"});
-		}
-	});
-});
-
-app.get('/update/device/:key/:uuid/:name/:description/:enabled', function(req, res) {
-	console.log ("METHOD /update/device");
-	var reqDevice = {
-		uuid: req.params.uuid,
-		name: req.params.name,
-		description: req.params.description,
-		enabled: req.params.enabled
-	};
-	security.CheckUUID(req.params.key, function (valid) {
-		if (valid) {
-			sql.CheckDeviceByUUID(reqDevice, function(err, data) {
-				if (data == true) {
-					sql.UpdateDeviceInfo(reqDevice, function(err) {
-						res.json(err);
-					});
-				} else {
-					res.json({error:"FAILED"});
-				}
-			});
-		} else {
-			res.json({error:"security issue"});
-		}
-	});
-});
-
-app.get('/delete/devices/:key', function(req, res) {
-	console.log ("METHOD /delete/devices");
-	security.CheckAdmin(req.params.key, function(valid) {
-		if (valid) {
-			sql.DeleteDevices(function(err){
-				res.json(err);
-			});
-		} else {
-			res.json({error:"security issue"});
-		}
-	});
-});
-
 app.get('/update/sensor/gps/:longitude/:latitude/:deviceid', function(req, res) {
 	console.log ("METHOD /update/sensor/gps " + req.params.longitude + ", " + req.params.latitude);
 	res.end("OK");
@@ -726,7 +657,7 @@ app.get('/select/sensor/camera/image/:key/:deviceuuid/:type', function (req, res
 	});
 });
 
-var server = app.listen(8080, function(){
+var server = app.listen(80, function(){
 	console.log('Server listening on port 8080');
 });
 

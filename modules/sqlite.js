@@ -1,4 +1,5 @@
 var sqlite3 = require('sqlite3').verbose();
+const moment = require('moment');
 
 function RandomNumber () {
   return Math.floor((1 + Math.random()) * 0x10000).toString(16).substring(1);
@@ -528,7 +529,7 @@ SqliteDB.prototype.InsertBasicSensor = function(sensor, callback) {
 
 	sql.serialize(function() {
 		var query = "INSERT INTO `tbl_basic_sensors` (`id`,`uuid`,`name`,`type`,`user_id`,`device_id`,`value`,`last_update_ts`,`enabled`) " +
-			"VALUES (NULL,'" + sensor.uuid + "','" + sensor.name + "'," + sensor.value + "," + sensor.userId + "," + sensor.deviceId + "," + sensor.type + "," + sensor.lastUpdateTs + ",1);";
+			"VALUES (NULL,'" + sensor.uuid + "','" + sensor.name + "'," + sensor.type + "," + sensor.userId + "," + sensor.deviceId + "," + sensor.value + "," + sensor.lastUpdateTs + ",1);";
 		console.log (query);
 
 		try {
@@ -553,13 +554,31 @@ SqliteDB.prototype.UpdateBasicSensor = function(sensor, callback) {
   });
 }
 
+SqliteDB.prototype.UpdateBasicSensorValue = function(uuid, value, callback) {
+	var sql = this.db;
+	console.log ("DATABASE UpdateBasicSensor");
+
+	sql.serialize(function() {
+		var query = "UPDATE `tbl_basic_sensors` SET `last_update_ts`=" + moment().unix() + ", `value`=" + value + " WHERE `uuid`='" + uuid + "';";
+		console.log(query);
+		
+		try {
+			sql.run(query);
+			callback({error:"OK"});
+		} catch (error) {
+			console.log(error.message);
+			callback({error:"ERROR"});
+		}
+  });
+}
+
 SqliteDB.prototype.SelectBasicSensorByUserId = function(userId, callback) {
 	var sql = this.db;
 	console.log ("DATABASE SelectBasicSensorByUserId");
 
 	sql.serialize(function() {
-		var query = "SELECT * FROM `tbl_basic_sensors` WHERE `user_id`=" + userId + ";";
-		console.log (query);
+		var query = "SELECT `tbl_basic_sensors`.*, `tbl_devices`.uuid as device_uuid FROM `tbl_basic_sensors` INNER JOIN `tbl_devices` ON `tbl_basic_sensors`.device_id = `tbl_devices`.id WHERE `tbl_basic_sensors`.user_id=" + userId + ";";
+		// console.log (query);
 		sql.all(query, function(err, rows) {
 			if (rows == null) {
 			} else {
@@ -576,7 +595,8 @@ SqliteDB.prototype.SelectBasicSensorByUserId = function(userId, callback) {
 							userId: rows[i].user_id,
 							deviceId: rows[i].device_id,
 							lastUpdateTs: rows[i].last_update_ts,
-							enabled: rows[i].enabled
+							enabled: rows[i].enabled,
+							deviceUUID: rows[i].device_uuid,
 						};
 						sensors.push(sensor);
 					}
@@ -591,13 +611,13 @@ SqliteDB.prototype.SelectBasicSensorByUserId = function(userId, callback) {
 	});
 }
 
-SqliteDB.prototype.SelectBasicSensorByUUID = function(sensor, callback) {
+SqliteDB.prototype.SelectBasicSensorByUUID = function(uuid, callback) {
 	var sql = this.db;
 	console.log ("DATABASE SelectBasicSensorByUUID");
 
 	sql.serialize(function() {
-		var query = "SELECT * FROM `tbl_basic_sensors` WHERE `uuid`='" + sensor.uuid + "';";
-		console.log (query);
+		var query = "SELECT `tbl_basic_sensors`.*, `tbl_devices`.uuid as device_uuid FROM `tbl_basic_sensors` INNER JOIN `tbl_devices` ON `tbl_basic_sensors`.device_id = `tbl_devices`.id WHERE `tbl_basic_sensors`.uuid='" + uuid + "';";
+		// console.log (query);
 		
 		try {
 			sql.all(query, function(err, rows) {
@@ -613,7 +633,8 @@ SqliteDB.prototype.SelectBasicSensorByUUID = function(sensor, callback) {
 							userId: rows[0].user_id,
 							deviceId: rows[0].device_id,
 							lastUpdateTs: rows[0].last_update_ts,
-							enabled: rows[0].enabled
+							enabled: rows[0].enabled,
+							deviceUUID: rows[0].device_uuid,
 						};
 						callback(null, sensor);
 						return;

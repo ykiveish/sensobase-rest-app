@@ -1,6 +1,6 @@
 const moment = require('moment');
 
-module.exports = function(app, security, sql) {
+module.exports = function(app, security, sql, iotClients, iotTable) {
 
     app.get('/delete/sensor/basic/:key', function(req, res) {
 		console.log ("METHOD /select/sensor/basic ALL");
@@ -54,12 +54,8 @@ module.exports = function(app, security, sql) {
 					if (device == null) {
 						res.json({error:"no device"});
 					} else {
-						var reqSensor = {
-							deviceId: device.id,
-							uuid: req.params.uuid
-						};
 						// Checking if database already has this sensor.
-						sql.SelectBasicSensorByUUID(reqSensor, function(err, item) {
+						sql.SelectBasicSensorByUUID(req.params.uuid, function(err, item) {
 							if (item == null && err == null) {
 								var sensor = {
 									id: 0,
@@ -94,5 +90,33 @@ module.exports = function(app, security, sql) {
 		});
 	});
 	
+	app.get('/update/sensor/basic/value/:key/:deviceuuid/:uuid/:value', function(req, res) {
+		console.log ("METHOD /update/sensor/basic/value");
+		
+		// Checking user key for validity.
+		security.CheckUUID(req.params.key, function (valid) {
+			if (valid) {
+				// Checking if database already has this sensor.
+				sql.SelectBasicSensorByUUID(req.params.uuid, function(err, item) {
+					if (err == null) {
+						if (item == null) {
+							res.json({error:"Sensor does not exist."});
+						} else {
+							// Update value of the sensor.
+							sql.UpdateBasicSensorValue(req.params.uuid, req.params.value, function (err) {
+								var connection = iotClients[iotTable[req.params.deviceuuid]];
+								connection.send("{\"uuid\":\"" + req.params.uuid + "\",\"value\":" + req.params.value + "}");
+								res.json(err);
+							});
+						}
+					} else {
+						res.json({error:"ERROR"});
+					}
+				});
+			} else {
+				res.json({error:"security issue"});
+			}
+		});
+	});
+	
 }
-
