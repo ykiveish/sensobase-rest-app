@@ -10,6 +10,12 @@ var ModulesDownloadCount = 0;
 var SmartPhoneHTML = "";
 var UserDEVKey = localStorage.getItem("key");
 
+var Prime 	= 29; // 32416189669
+var Base 	= 19;  // 32416187567
+
+var privateKey = Math.floor((Math.random() * 10) + 1);
+var publicKey = (Math.pow(Base, privateKey)) % Prime;
+
 function Storage() {
 	self = this;
 	
@@ -398,6 +404,19 @@ $(document).ready(function() {
 				}
 			});
 		}
+	});
+
+	$.ajax({
+	    url: url + 'dh_sync/' + publicKey,
+	    type: "GET",
+	    dataType: "json",
+	    success: function (data) {
+	    	var pubKey = parseInt(data);
+	    	var key = (Math.pow(pubKey, privateKey)) % Prime;
+	    	console.log("Key: " + key + " = " + pubKey + " ^ " + privateKey + " % " + Prime);
+	    	console.log("Public: " + publicKey + " = " + Base + " ^ " + privateKey + " % " + Prime);
+
+	    }
 	});
 	
 	/*$.ajax({

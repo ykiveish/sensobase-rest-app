@@ -20,6 +20,11 @@ var KnownBrandName = ["MakeSense-Virtual", "MakeSense"];
 var app = express();
 app.use(express.static(path.join(__dirname, 'public')));
 
+var Prime 	= 29; // 32416189669
+var Base 	= 19;  // 32416187567
+var DiffieHellmanDict = {};
+
+
 var IOTClients = [];
 var IOTClientsTable = {};
 var WebSSEClients = {};
@@ -86,8 +91,6 @@ function StatusHandlerFunc() {
 
 var StatusHandler = setInterval (StatusHandlerFunc, 10000);
 
-
-
 // WebSocket server
 wsServer.on('request', function(request) {
 	var connection = request.accept(null, request.origin);
@@ -111,6 +114,8 @@ wsServer.on('request', function(request) {
 			// Saving device in server local database for monitoring.
 			Local.DeviceListDictWebSocket[jsonData.device.uuid] = jsonData.device;
 			
+			// TODO - Save to SQLite database.
+			
 			// Sending data to application. No check needed application will use data it needs. (user key was verified)
 			WebConnection = WebSSEClients[jsonData.key];
 			if (WebConnection != undefined) {
@@ -130,6 +135,31 @@ wsServer.on('request', function(request) {
 	});
 });
 
+app.get('/dh_sync/:mod', function (req, res) {
+	console.log("dh_sync");
+	var privateKey = Math.floor((Math.random() * 10) + 1);
+
+	var dhData = {
+					dh: {	
+						mod: parseInt(req.params.mod),
+						base: Base,
+						prime: Prime,
+						pk: privateKey,
+						key: 0
+					}
+				};
+
+	dhData.dh.key = (Math.pow(dhData.dh.mod, dhData.dh.pk)) % Prime;
+	var publicKey = (Math.pow(Base, dhData.dh.pk)) % Prime;
+	DiffieHellmanDict[req.params.mod] = dhData;
+
+	console.log("Key: " + dhData.dh.key + " = " + dhData.dh.mod + " ^ " + dhData.dh.pk + " % " + Prime);
+	console.log("Public: " + publicKey + " = " + Base + " ^ " + dhData.dh.pk + " % " + Prime);
+	res.end(String(publicKey));
+});
+
+
+
 app.get('/register_devices_update_event/:key', function(req, res) {
 	req.socket.setTimeout(Infinity);
 
@@ -142,9 +172,9 @@ app.get('/register_devices_update_event/:key', function(req, res) {
 
     console.log ((new Date()) + " #> Register to sensor stream ... " + req.params.key);
 	WebSSEClients[req.params.key] = {
-                                addr: req.params.key, 
-                                session: res
-                            }
+										addr: req.params.key, 
+										session: res
+                            		};
 	req.on("close", function() {
 		console.log ((new Date()) + " #> UnRegister to sensor stream ... " + req.params.key);
 		delete WebSSEClients[req.params.key]
