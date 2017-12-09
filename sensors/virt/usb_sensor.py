@@ -125,14 +125,60 @@ class MkSArduinoSensor ():
 		return rxPacket
 
 class MkSNetMachine ():
-	def __init__(self, device):
-		self.Name = "Communication to Node.JS"
-		self.Device = device
+	def __init__(self, uri):
+		self.Name 		= "Communication to Node.JS"
+		self.ServerUri 	= uri
+		self.UserName 	= ""
+		self.Password 	= ""
+		self.UserDevKey = ""
+
+	def GetRequest (self, url):
+		return urllib2.urlopen(url).read()
+
+	def Authenticate (self, username, passwrod):
+		self.UserName = username
+		self.Password = passwrod
+
+		data 	 = self.GetRequest(self.ServerUri + "fastlogin/" + self.UserName + "/" + self.Password);
+		jsonData = json.loads(data);
+
+		if ('error' in jsonData):
+			return False;
+		else:
+			self.UserDevKey = jsonData['key']
+			return True;
+
+class MkSThisMachine ():
+	def __init__ (self, device, network):
+		self.Device 	= device
+		self.Type 		= 1000
+		self.UUID 		= "ac6de837-7863-72a9-c789-b0aae7e9d93e"
+		self.OSType 	= "Linux"
+		self.OSVersion 	= "Unknown"
+		self.BrandName 	= "MakeSense-Virtual"
+
+	def BuildJsonString (self):
+		payload = "{\"key\":\"" + str(UserDevKey) + "\",\"device\":{\"uuid\":\"" + str(UUID) + "\",\"type\":" + str(Type) + "},\"sensors\":["
+		for item in Sensors:
+			if item.Type == 4:
+				payload += "{\"uuid\":\"" + str(item.UUID) + "\",\"type\":" + str(item.Type) + ",\"value\":" + str(item.Value) + ", \"update_ts\":5},"
+			else:
+				payload += "{\"uuid\":\"" + str(item.UUID) + "\",\"type\":" + str(item.Type) + ",\"value\":" + str(Counter) + ", \"update_ts\":5},"
+		payload = payload[:-1]
+		payload += "]}"
+		return payload
 
 prot 		= MkSProtocol()
 connector 	= USBAdaptor()
 device 	  	= MkSArduinoSensor(connector, prot)
-network 	= MkSNetMachine (device)
+network 	= MkSNetMachine("http://ec2-35-161-108-53.us-west-2.compute.amazonaws.com/")
+states 		= MkSThisMachine(device, network)
+
+
+
+
+
+
 
 def GetRequest (url):
 	return urllib2.urlopen(url).read()
@@ -283,48 +329,33 @@ States = {
 'UPDATE': 	UpdateSensorState
 }
 
+
+
+
+
+
 def main():
-	global Sesnors
-
-	
-
 	ret = device.Connect()
 	if ret == False:
 		return 1
 
 	print "Device Found ..."
-	print device.GetUUID()
+	ret = device.GetUUID()
+	print ret
 
-	#to_usb = prot.GetConfigurationRegisterCommand()
-	#print ":".join("{:02x}".format(ord(c)) for c in to_usb)
-	#connector.Send(to_usb)
-	#time.sleep(1)
-	#to_usb = prot.SetArduinoNanoUSBSensorValueCommand(0x1, 0x1)
-	#print ":".join("{:02x}".format(ord(c)) for c in to_usb)
-	#connector.Send(to_usb)
-	#time.sleep(1)
-	#to_usb = prot.SetArduinoNanoUSBSensorValueCommand(0x1, 0x0)
-	#print ":".join("{:02x}".format(ord(c)) for c in to_usb)
-	#connector.Send(to_usb)
-	#time.sleep(1)
-	#to_usb = prot.GetDeviceTypeCommand()
-	#print ":".join("{:02x}".format(ord(c)) for c in to_usb)
-	#connector.Send(to_usb)
-	#time.sleep(1)
-	#to_usb = prot.GetDeviceUUIDCommand()
-	#print ":".join("{:02x}".format(ord(c)) for c in to_usb)
-	#connector.Send(to_usb)
+	ret = network.Authenticate("ykiveish", "1234")
+	print ret
 
-	Sensors.append(Sensor("ac6de837-7863-72a9-c789-a0aae7e9d931", 1, 1))
-	Sensors.append(Sensor("ac6de837-7863-72a9-c789-a0aae7e9d932", 2, 2))
-	Sensors.append(Sensor("ac6de837-7863-72a9-c789-a0aae7e9d933", 3, 3))
-	Sensors.append(Sensor("ac6de837-7863-72a9-c789-a0aae7e9d934", 4, 4))
-	Sensors.append(Sensor("ac6de837-7863-72a9-c789-a0aae7e9d935", 5, 5))
+	#Sensors.append(Sensor("ac6de837-7863-72a9-c789-a0aae7e9d931", 1, 1))
+	#Sensors.append(Sensor("ac6de837-7863-72a9-c789-a0aae7e9d932", 2, 2))
+	#Sensors.append(Sensor("ac6de837-7863-72a9-c789-a0aae7e9d933", 3, 3))
+	#Sensors.append(Sensor("ac6de837-7863-72a9-c789-a0aae7e9d934", 4, 4))
+	#Sensors.append(Sensor("ac6de837-7863-72a9-c789-a0aae7e9d935", 5, 5))
 	
-	while True:
-		Method = States[State]
-		Method()
-		time.sleep(1)
+	#while True:
+	#	Method = States[State]
+	#	Method()
+	#	time.sleep(1)
 	
 if __name__ == "__main__":
     main()
