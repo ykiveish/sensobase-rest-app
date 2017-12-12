@@ -9,23 +9,6 @@ import sys
 import serial
 import struct
 
-Counter = 1 
-TimerState = 0
-State = 'IDLE'
-
-UserDevKey = "ac6de837-7863-72a9-c789-a0aae7e9d935"
-UserName = "ykiveish"
-Password = "1234"
-
-Type 		= 1000
-UUID 		= "ac6de837-7863-72a9-c789-b0aae7e9d93e"
-OSType 		= "Linux"
-OSVersion 	= "Unknown"
-BrandName 	= "MakeSense-Virtual"
-
-WebSocketServer = "ws://ec2-35-161-108-53.us-west-2.compute.amazonaws.com:8181/"
-RESTApiServer = "http://ec2-35-161-108-53.us-west-2.compute.amazonaws.com/" 
-
 class Sensor:
 	ID	  = 0
 	UUID  = 0
@@ -40,8 +23,6 @@ class Sensor:
 	
 	def SetInterval(self, interval):
 		self.UpdateInterval = interval
-	
-Sensors = []
 
 class Adaptor:
 	def Initiate (self):
@@ -125,216 +106,186 @@ class MkSArduinoSensor ():
 		return rxPacket
 
 class MkSNetMachine ():
-	def __init__(self, uri):
-		self.Name 		= "Communication to Node.JS"
-		self.ServerUri 	= uri
-		self.UserName 	= ""
-		self.Password 	= ""
-		self.UserDevKey = ""
+	def __init__(self, uri, wsuri):
+		self.Name 		  = "Communication to Node.JS"
+		self.ServerUri 	  = uri
+		self.WSServerUri  = wsuri
+		self.UserName 	  = ""
+		self.Password 	  = ""
+		self.UserDevKey   = ""
+		self.WSConnection = None
+		self.DeviceUUID   = ""
+		self.Type 		  = 0
+
+		self.OnConnectionCallback 		= None
+		self.OnDataArrivedCallback 		= None
+		self.OnErrorCallback 			= None
+		self.OnConnectionClosedCallback = None
 
 	def GetRequest (self, url):
 		return urllib2.urlopen(url).read()
 
-	def Authenticate (self, username, passwrod):
-		self.UserName = username
-		self.Password = passwrod
-
-		data 	 = self.GetRequest(self.ServerUri + "fastlogin/" + self.UserName + "/" + self.Password);
-		jsonData = json.loads(data);
+	def Authenticate (self, username, password):
+		data 	 = self.GetRequest(self.ServerUri + "fastlogin/" + self.UserName + "/" + self.Password)
+		jsonData = json.loads(data)
 
 		if ('error' in jsonData):
-			return False;
+			return False
 		else:
 			self.UserDevKey = jsonData['key']
-			return True;
+			return True
+
+	def InsertBasicSesnor (self, sensor):
+		data 	 = self.GetRequest(self.ServerUri + "insert/sensor/basic/" + self.UserDevKey + "/" + self.DeviceUUID + "/" + sensor.UUID + "/" + str(sensor.Type) + "/" + str(sensor.Value));
+		jsonData = json.loads(data)
+
+	def WSConnection_OnMessage_Handler (self, ws, message):
+		print message
+		data = json.loads(message)
+		self.OnDataArrivedCallback(data)
+
+	def WSConnection_OnError_Handler (self, ws, error):
+	    print error
+
+	def WSConnection_OnClose_Handler (self, ws):
+	    print "Connection closed ..."
+	    sys.exit()
+		
+	def WSConnection_OnOpen_Handler (self, ws):
+		print "Connection to server established ..."
+		self.OnConnectionCallback()
+		#SaveState()
+
+	def Connect (self, username, password):
+		self.UserName = username
+		self.Password = password
+
+		# TODO - Add retry counter.
+		ret = self.Authenticate(username, password)
+		if ret == True:
+			websocket.enableTrace(False)
+			self.WSConnection 				= websocket.WebSocketApp(self.WSServerUri)
+			self.WSConnection.on_message 	= self.WSConnection_OnMessage_Handler
+			self.WSConnection.on_error 		= self.WSConnection_OnError_Handler
+			self.WSConnection.on_close 		= self.WSConnection_OnClose_Handler
+			self.WSConnection.on_open 		= self.WSConnection_OnOpen_Handler
+			self.WSConnection.header		= {'uuid':self.DeviceUUID}
+			self.WSConnection.run_forever()
+
+	def SetDeviceUUID (self, uuid):
+		self.DeviceUUID = uuid;
+
+	def SetDeviceType (self, type):
+		self.Type = type;
+
+	def SendWebSocket(self, payload):
+		self.WSConnection.send(payload)
+
+	def BuildJSONFromBasicSensorList (self, sensors):
+		payload = "{\"key\":\"" + str(self.UserDevKey) + "\",\"device\":{\"uuid\":\"" + str(self.DeviceUUID) + "\",\"type\":" + str(self.Type) + "},\"sensors\":["
+		for item in sensors:
+			if item.Type == 4:
+				payload += "{\"uuid\":\"" + str(item.UUID) + "\",\"type\":" + str(item.Type) + ",\"value\":" + str(item.Value) + ", \"update_ts\":5},"
+			else:
+				payload += "{\"uuid\":\"" + str(item.UUID) + "\",\"type\":" + str(item.Type) + ",\"value\":" + str(item.Value) + ", \"update_ts\":5},"
+		payload = payload[:-1]
+		payload += "]}"
+		return payload
+
+	def GetUUIDFromJson(self, json):
+		return json['uuid']
+
+	def GetValueFromJson(self, json):
+		return json['value']
 
 class MkSThisMachine ():
 	def __init__ (self, device, network):
+		self.Sensors 	= []
 		self.Device 	= device
+		self.Network	= network
 		self.Type 		= 1000
 		self.UUID 		= "ac6de837-7863-72a9-c789-b0aae7e9d93e"
 		self.OSType 	= "Linux"
 		self.OSVersion 	= "Unknown"
 		self.BrandName 	= "MakeSense-Virtual"
+		self.State 		= 'IDLE'
 
-	def BuildJsonString (self):
-		payload = "{\"key\":\"" + str(UserDevKey) + "\",\"device\":{\"uuid\":\"" + str(UUID) + "\",\"type\":" + str(Type) + "},\"sensors\":["
-		for item in Sensors:
-			if item.Type == 4:
-				payload += "{\"uuid\":\"" + str(item.UUID) + "\",\"type\":" + str(item.Type) + ",\"value\":" + str(item.Value) + ", \"update_ts\":5},"
-			else:
-				payload += "{\"uuid\":\"" + str(item.UUID) + "\",\"type\":" + str(item.Type) + ",\"value\":" + str(Counter) + ", \"update_ts\":5},"
-		payload = payload[:-1]
-		payload += "]}"
-		return payload
+		self.States = {
+			'IDLE': 	self.IdleState,
+			'ACCESS': 	self.GetAccessSatate,
+			'PUBLISH': 	self.PublishSensorState,
+			'UPDATE': 	self.UpdateSensorState
+		}
+
+		self.Network.SetDeviceUUID(self.UUID)
+		self.Network.SetDeviceType(self.Type)
+		self.Network.OnConnectionCallback  = self.WebSocketConnectedCallback
+		self.Network.OnDataArrivedCallback = self.WebSocketDataArrivedCallback
+
+	def WebSocketConnectedCallback (self):
+		print "WebSocketConnectedCallback"
+		if (len(self.Sensors) > 0):
+			payload = self.Network.BuildJSONFromBasicSensorList(self.Sensors)
+			self.Network.SendWebSocket(payload)
+
+	def WebSocketDataArrivedCallback (self, json):
+		print "WebSocketDataArrivedCallback"
+		ret = self.UpdateSensor(json)
+		if ret == True:
+			payload = self.Network.BuildJSONFromBasicSensorList(self.Sensors)
+			self.Network.SendWebSocket(payload)
+
+	def AddSensor (self, sensor):
+		self.Sensors.append(sensor)
+
+	def UpdateSensor (self, sensorJSON):
+		for item in self.Sensors:
+			if item.UUID == self.Network.GetUUIDFromJson(sensorJSON):
+				item.Value = self.Network.GetValueFromJson(sensorJSON)
+				return True
+	
+		return False
+
+	def IdleState (self):
+		print "IdleState"
+		self.State = "ACCESS"
+
+	def GetAccessSatate (self):
+		print "GetAccessSatate"
+		if self.Network.Connect("ykiveish", "1234") == True:
+			self.State = "PUBLISH"
+
+	def PublishSensorState (self):
+		print "PublishSensorState"
+		for item in self.Sensors:
+			self.Network.InsertBasicSesnor (item)
+		self.State = 'UPDATE'
+
+	def UpdateSensorState (self):
+		print "UpdateSensorState"
+		
+	def MachineStateWorker (self):
+		while True:
+			self.Method = self.States[self.State]
+			self.Method()
+			time.sleep(1)
+
+	def Run (self):
+		thread.start_new_thread(self.MachineStateWorker, ())
+		while True:
+			time.sleep(5)
 
 prot 		= MkSProtocol()
 connector 	= USBAdaptor()
 device 	  	= MkSArduinoSensor(connector, prot)
-network 	= MkSNetMachine("http://ec2-35-161-108-53.us-west-2.compute.amazonaws.com/")
-states 		= MkSThisMachine(device, network)
-
-
-
-
-
-
-
-def GetRequest (url):
-	return urllib2.urlopen(url).read()
-
-def BuildJsonString ():
-	payload = "{\"key\":\"" + str(UserDevKey) + "\",\"device\":{\"uuid\":\"" + str(UUID) + "\",\"type\":" + str(Type) + "},\"sensors\":["
-	for item in Sensors:
-		if item.Type == 4:
-			payload += "{\"uuid\":\"" + str(item.UUID) + "\",\"type\":" + str(item.Type) + ",\"value\":" + str(item.Value) + ", \"update_ts\":5},"
-		else:
-			payload += "{\"uuid\":\"" + str(item.UUID) + "\",\"type\":" + str(item.Type) + ",\"value\":" + str(Counter) + ", \"update_ts\":5},"
-	payload = payload[:-1]
-	payload += "]}"
-	return payload
-
-def UpdateSensorFromJson(json):
-	
-	for item in Sensors:
-		if item.UUID == json['uuid']:
-			item.Value = json['value']
-			device.SetSensor(item.UUID[-1], item.Value)
-			return True
-	
-	return False
-
-def SaveState ():
-	jsonStr = BuildJsonString ()
-	file = open("system.json", "w")
-	file.write(jsonStr)
-	file.close()
-
-def LoadState ():
-	file = open("system.json", "r")
-	jsonStr = file.read()
-	file.close()
-	
-	# Convert to Json.
-	data = json.loads(jsonStr)
-	# Itterate over sensors and update local storage. 
-	for sensor in data["sensors"]:
-		UpdateSensorFromJson (sensor)
-	print "Device state loaded ..."
-
-# {"uuid":"sesnsor-uuid","value":value}
-def on_message (ws, message):
-	print message
-	data = json.loads(message)
-	UpdateSensorFromJson (data)
-
-def on_error (ws, error):
-    print error
-
-def on_close (ws):
-    print "Connection closed ..."
-    sys.exit()
-	
-def on_open (ws):
-	print "Connection to server established ..."
-	def worker (*args):
-		global Counter
-		while True:
-			ws.send(BuildJsonString())
-			SaveState()
-			time.sleep(5)
-			Counter += 1
-	thread.start_new_thread(worker, ())
-
-def GetAccess ():
-	data = GetRequest(RESTApiServer + "fastlogin/" + UserName + "/" + Password);
-	jsonData = json.loads(data);
-	
-	global UserDevKey
-	if ('error' in jsonData):
-		return False;
-	else:
-		UserDevKey = jsonData['key']
-		return True;
-
-def InsertDevice ():
-	global UserDevKey
-	global Type
-	global UUID
-	global OSType
-	global OSVersion
-	global BrandName
-	
-	data = GetRequest(RESTApiServer + "insert/device/" + UserDevKey + "/" + str(Type) + "/" + UUID + "/" + OSType + "/" + OSVersion + "/" + BrandName);
-	jsonData = json.loads(data)
-	
-	if ('info' in jsonData):
-		return True;
-	else:
-		return False;
-
-def InsertSesnor (sensor):
-	data = GetRequest(RESTApiServer + "insert/sensor/basic/" + UserDevKey + "/" + UUID + "/" + sensor.UUID + "/" + str(sensor.Type) + "/" + str(sensor.Value));
-	jsonData = json.loads(data)
-	
-def IdleState ():
-	global TimerState
-	global State
-	
-	if (TimerState % 3) == 0:
-		State = "ACCESS"
-	
-	LoadState ()
-	time.sleep(1)
-	TimerState += 1
-
-def GetAccessSatate ():
-	global State
-	print "GetAccessSatate"
-	if True == GetAccess ():
-		State = 'PUBLISH'
-	else:
-		State = 'IDLE'
-
-def PublishSensorState ():
-	global State
-	print "PublishSensorState"
-	
-	for item in Sensors:
-		InsertSesnor (item)
-
-	State = 'UPDATE'
-
-def UpdateSensorState ():
-	global State
-	print "UpdateSensorState"
-	websocket.enableTrace(False)
-	ws = websocket.WebSocketApp(WebSocketServer)
-	
-	ws.on_message 	= on_message
-	ws.on_error 	= on_error
-	ws.on_close 	= on_close
-	ws.on_open 		= on_open
-	ws.header		= {'uuid':UUID}
-	
-	ws.run_forever()
-
-def LoadJson():
-	retun
-
-States = {
-'IDLE': 	IdleState,
-'ACCESS': 	GetAccessSatate,
-'PUBLISH': 	PublishSensorState,
-'UPDATE': 	UpdateSensorState
-}
-
-
-
-
-
+network 	= MkSNetMachine("http://ec2-35-161-108-53.us-west-2.compute.amazonaws.com/", "ws://ec2-35-161-108-53.us-west-2.compute.amazonaws.com:8181/")
+machine		= MkSThisMachine(device, network)
 
 def main():
+	machine.AddSensor(Sensor("ac6de837-7863-72a9-c789-a0aae7e9d931", 1, 1))
+	machine.AddSensor(Sensor("ac6de837-7863-72a9-c789-a0aae7e9d932", 2, 2))
+	machine.AddSensor(Sensor("ac6de837-7863-72a9-c789-a0aae7e9d933", 4, 3))
+
 	ret = device.Connect()
 	if ret == False:
 		return 1
@@ -343,19 +294,7 @@ def main():
 	ret = device.GetUUID()
 	print ret
 
-	ret = network.Authenticate("ykiveish", "1234")
-	print ret
+	machine.Run()
 
-	#Sensors.append(Sensor("ac6de837-7863-72a9-c789-a0aae7e9d931", 1, 1))
-	#Sensors.append(Sensor("ac6de837-7863-72a9-c789-a0aae7e9d932", 2, 2))
-	#Sensors.append(Sensor("ac6de837-7863-72a9-c789-a0aae7e9d933", 3, 3))
-	#Sensors.append(Sensor("ac6de837-7863-72a9-c789-a0aae7e9d934", 4, 4))
-	#Sensors.append(Sensor("ac6de837-7863-72a9-c789-a0aae7e9d935", 5, 5))
-	
-	#while True:
-	#	Method = States[State]
-	#	Method()
-	#	time.sleep(1)
-	
 if __name__ == "__main__":
     main()
