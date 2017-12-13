@@ -36,7 +36,14 @@ class USBAdaptor (Adaptor):
 	SerialAdapter = ""
 
 	def __init__(self):
-		self.UsbPath = "/dev/"
+		self.UsbPath 						  = "/dev/"
+		self.DataArrived 					  = False;
+		self.RXData 						  = ""
+		self.OnSerialConnectedCallback 		  = None
+		self.OnSerialDataArrivedCallback 	  = None
+		self.OnSerialErrorCallback 			  = None
+		self.OnSerialConnectionClosedCallback = None
+
 		self.Initiate()
 
 	def Initiate (self):
@@ -47,15 +54,24 @@ class USBAdaptor (Adaptor):
 	def ConnectDevice(self, id):
 		self.SerialAdapter = serial.Serial(port=self.UsbPath+self.Interfaces[id-1], baudrate=9600, parity=serial.PARITY_ODD, stopbits=serial.STOPBITS_TWO, bytesize=serial.SEVENBITS)
 		if self.SerialAdapter != "":
+			thread.start_new_thread(self.RecievePacketsWorker, ())
 			return True
 		
 		return False
 
 	def Send (self, data):
+		self.DataArrived = False
 		self.SerialAdapter.write(str(data) + '\n')
-		reading = self.SerialAdapter.readline()
-		print ":".join("{:02x}".format(ord(c)) for c in reading)
-		return reading
+		while self.DataArrived == False:
+			time.sleep(0.1)
+		return self.RXData
+
+	def RecievePacketsWorker (self):
+		while True:
+			print "Data Arrived"
+			self.RXData = self.SerialAdapter.readline()
+			self.DataArrived = True
+			print ":".join("{:02x}".format(ord(c)) for c in self.RXData)
 
 class MkSProtocol ():
 	def SetConfigurationRegisterCommand (self):
@@ -69,6 +85,9 @@ class MkSProtocol ():
 
 	def SetArduinoNanoUSBSensorValueCommand (self, id, value):
 		return struct.pack("BBHBBH", 0xDE, 0xAD, 0x101, 0x3, int(id), int(value))
+
+	def GetArduinoNanoUSBSensorValueCommand (self, id):
+		return struct.pack("BBHBBH", 0xDE, 0xAD, 0x100, 0x3, int(id), 0x0)
 
 	def GetDeviceUUIDCommand (self):
 		return struct.pack("BBH", 0xDE, 0xAD, 0x51)
@@ -102,6 +121,11 @@ class MkSArduinoSensor ():
 
 	def SetSensor (self, id, value):
 		txPacket = self.Protocol.SetArduinoNanoUSBSensorValueCommand(id, value)
+		rxPacket = self.Adaptor.Send(txPacket)
+		return rxPacket
+
+	def GetSensor (self, id):
+		txPacket = self.Protocol.GetArduinoNanoUSBSensorValueCommand(id)
 		rxPacket = self.Adaptor.Send(txPacket)
 		return rxPacket
 
@@ -156,6 +180,9 @@ class MkSNetMachine ():
 		self.OnConnectionCallback()
 		#SaveState()
 
+	def WSWorker (self):
+		self.WSConnection.run_forever()
+
 	def Connect (self, username, password):
 		self.UserName = username
 		self.Password = password
@@ -170,7 +197,10 @@ class MkSNetMachine ():
 			self.WSConnection.on_close 		= self.WSConnection_OnClose_Handler
 			self.WSConnection.on_open 		= self.WSConnection_OnOpen_Handler
 			self.WSConnection.header		= {'uuid':self.DeviceUUID}
-			self.WSConnection.run_forever()
+			thread.start_new_thread(self.WSWorker, ())
+			return True
+
+		return False
 
 	def SetDeviceUUID (self, uuid):
 		self.DeviceUUID = uuid;
@@ -209,6 +239,7 @@ class MkSThisMachine ():
 		self.OSVersion 	= "Unknown"
 		self.BrandName 	= "MakeSense-Virtual"
 		self.State 		= 'IDLE'
+		self.Delay 		= 1;
 
 		self.States = {
 			'IDLE': 	self.IdleState,
@@ -242,6 +273,7 @@ class MkSThisMachine ():
 		for item in self.Sensors:
 			if item.UUID == self.Network.GetUUIDFromJson(sensorJSON):
 				item.Value = self.Network.GetValueFromJson(sensorJSON)
+				self.Device.SetSensor(item.ID, item.Value)
 				return True
 	
 		return False
@@ -260,15 +292,24 @@ class MkSThisMachine ():
 		for item in self.Sensors:
 			self.Network.InsertBasicSesnor (item)
 		self.State = 'UPDATE'
+		self.Delay = 10
 
 	def UpdateSensorState (self):
 		print "UpdateSensorState"
+		for item in self.Sensors:
+			data = self.Device.GetSensor(item.ID)
+			MagicOne, MagicTwo, Opcode, Length, DeviceId, Value = struct.unpack("BBHBBH", data[0:8])
+			item.Value = Value
+
+		if (len(self.Sensors) > 0):
+			payload = self.Network.BuildJSONFromBasicSensorList(self.Sensors)
+			self.Network.SendWebSocket(payload)
 		
 	def MachineStateWorker (self):
 		while True:
 			self.Method = self.States[self.State]
 			self.Method()
-			time.sleep(1)
+			time.sleep(self.Delay)
 
 	def Run (self):
 		thread.start_new_thread(self.MachineStateWorker, ())
