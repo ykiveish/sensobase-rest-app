@@ -59,13 +59,13 @@ function SqliteDB(dbFile) {
           "`last_update_ts`      INTEGER NOT NULL," +
           "`enabled`             TINYINT NOT NULL);");
 
-	sql.run("CREATE TABLE IF NOT EXISTS `tbl_basic_sensors` (" +
+    sql.run("CREATE TABLE IF NOT EXISTS `tbl_basic_sensors` (" +
           "`id`                  INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT," +
-		  "`uuid`                VARCHAR(64) NOT NULL," +
-		  "`name`          		 VARCHAR(64) NOT NULL," +
-		  "`value`				 INTEGER NOT NULL," +
+		      "`uuid`                VARCHAR(64) NOT NULL," +
+		      "`name`          		   VARCHAR(64) NOT NULL," +
+		      "`value`               INTEGER NOT NULL," +
           "`type`                INTEGER NOT NULL," +
-		  "`user_id`             INTEGER NOT NULL," +
+		      "`user_id`             INTEGER NOT NULL," +
           "`device_id`           INTEGER NOT NULL," +
           "`last_update_ts`      INTEGER NOT NULL," +
           "`enabled`             TINYINT NOT NULL);");

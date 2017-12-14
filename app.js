@@ -89,7 +89,18 @@ function StatusHandlerFunc() {
 	console.log ("# *********************");
 }
 
+function DisconnectedDeviceHandlerFunc() {
+	if (Local.DeviceListDictWebSocket !== undefined) {
+		for (var index in Local.DeviceListDictWebSocket) {
+			if (moment().unix() - Local.DeviceListDictWebSocket[index].timestamp > 10) {
+				delete Local.DeviceListDictWebSocket[Local.DeviceListDictWebSocket[index].uuid];
+			}
+		}
+	}
+}
+
 var StatusHandler = setInterval (StatusHandlerFunc, 10000);
+var DisconnectedDeviceHandler = setInterval (DisconnectedDeviceHandlerFunc, 10000);
 
 // WebSocket server
 wsServer.on('request', function(request) {
@@ -112,6 +123,7 @@ wsServer.on('request', function(request) {
 			}
 			
 			// Saving device in server local database for monitoring.
+			jsonData.device.timestamp = moment().unix();
 			Local.DeviceListDictWebSocket[jsonData.device.uuid] = jsonData.device;
 			
 			// TODO - Save to SQLite database.
@@ -157,8 +169,6 @@ app.get('/dh_sync/:mod', function (req, res) {
 	console.log("Public: " + publicKey + " = " + Base + " ^ " + dhData.dh.pk + " % " + Prime);
 	res.end(String(publicKey));
 });
-
-
 
 app.get('/register_devices_update_event/:key', function(req, res) {
 	req.socket.setTimeout(Infinity);
