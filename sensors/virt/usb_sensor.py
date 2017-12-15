@@ -117,7 +117,7 @@ class MkSArduinoSensor ():
 	def GetUUID (self):
 		txPacket = self.Protocol.GetDeviceUUIDCommand()
 		rxPacket = self.Adaptor.Send(txPacket)
-		return rxPacket[5:]
+		return rxPacket[5:-1] # "-1" is for removing "\n" at the end (no unpack used)
 
 	def SetSensor (self, id, value):
 		txPacket = self.Protocol.SetArduinoNanoUSBSensorValueCommand(id, value)
@@ -127,7 +127,8 @@ class MkSArduinoSensor ():
 	def GetSensor (self, id):
 		txPacket = self.Protocol.GetArduinoNanoUSBSensorValueCommand(id)
 		rxPacket = self.Adaptor.Send(txPacket)
-		return rxPacket
+		MagicOne, MagicTwo, Opcode, Length, DeviceId, Value = struct.unpack("BBHBBH", rxPacket[0:8])
+		return DeviceId, Value
 
 class MkSNetMachine ():
 	def __init__(self, uri, wsuri):
@@ -225,11 +226,18 @@ class MkSNetMachine ():
 	def GetValueFromJson(self, json):
 		return json['value']
 
+	def UpdateSensorsWS(self, sensors):
+		if (len(sensors) > 0):
+			payload = self.BuildJSONFromBasicSensorList(sensors)
+			self.SendWebSocket(payload)
+
 class MkSThisMachine ():
-	def __init__ (self, device, network):
+	def __init__ (self):
 		self.Sensors 	= []
-		self.Device 	= device
-		self.Network	= network
+		self.Protocol	= MkSProtocol()
+		self.Connector 	= USBAdaptor()
+		self.Device 	= MkSArduinoSensor(self.Connector, self.Protocol)
+		self.Network	= MkSNetMachine("http://ec2-35-161-108-53.us-west-2.compute.amazonaws.com/", "ws://ec2-35-161-108-53.us-west-2.compute.amazonaws.com:8181/")
 		self.Type 		= 1000
 		self.UUID 		= "ac6de837-7863-72a9-c789-b0aae7e9d93e"
 		self.OSType 	= "Linux"
@@ -245,23 +253,23 @@ class MkSThisMachine ():
 			'UPDATE': 	self.UpdateSensorState
 		}
 
-		self.Network.SetDeviceUUID(self.UUID)
 		self.Network.SetDeviceType(self.Type)
 		self.Network.OnConnectionCallback  = self.WebSocketConnectedCallback
 		self.Network.OnDataArrivedCallback = self.WebSocketDataArrivedCallback
 
+		self.AddSensor(Sensor("ac6de837-7863-72a9-c789-a0aae7e9d931", 1, 1))
+		self.AddSensor(Sensor("ac6de837-7863-72a9-c789-a0aae7e9d932", 2, 2))
+		self.AddSensor(Sensor("ac6de837-7863-72a9-c789-a0aae7e9d933", 4, 3))
+
 	def WebSocketConnectedCallback (self):
 		print "WebSocketConnectedCallback"
-		if (len(self.Sensors) > 0):
-			payload = self.Network.BuildJSONFromBasicSensorList(self.Sensors)
-			self.Network.SendWebSocket(payload)
+		self.Network.UpdateSensorsWS(self.Sensors)
 
 	def WebSocketDataArrivedCallback (self, json):
 		print "WebSocketDataArrivedCallback"
 		ret = self.UpdateSensor(json)
 		if ret == True:
-			payload = self.Network.BuildJSONFromBasicSensorList(self.Sensors)
-			self.Network.SendWebSocket(payload)
+			self.Network.UpdateSensorsWS(self.Sensors)
 
 	def AddSensor (self, sensor):
 		self.Sensors.append(sensor)
@@ -287,20 +295,17 @@ class MkSThisMachine ():
 	def PublishSensorState (self):
 		print "PublishSensorState"
 		for item in self.Sensors:
-			self.Network.InsertBasicSesnor (item)
+			self.Network.InsertBasicSesnor(item)
 		self.State = 'UPDATE'
-		self.Delay = 10
 
 	def UpdateSensorState (self):
 		print "UpdateSensorState"
 		for item in self.Sensors:
-			data = self.Device.GetSensor(item.ID)
-			MagicOne, MagicTwo, Opcode, Length, DeviceId, Value = struct.unpack("BBHBBH", data[0:8])
+			DeviceId, Value = self.Device.GetSensor(item.ID)
 			item.Value = Value
 
-		if (len(self.Sensors) > 0):
-			payload = self.Network.BuildJSONFromBasicSensorList(self.Sensors)
-			self.Network.SendWebSocket(payload)
+		self.Network.UpdateSensorsWS(self.Sensors)
+		self.Delay = 10
 		
 	def MachineStateWorker (self):
 		while True:
@@ -309,29 +314,18 @@ class MkSThisMachine ():
 			time.sleep(self.Delay)
 
 	def Run (self):
+		ret = self.Device.Connect()
+		if ret == False:
+			return 1
+
+		self.UUID = self.Device.GetUUID()
+		self.Network.SetDeviceUUID(self.UUID)
 		thread.start_new_thread(self.MachineStateWorker, ())
 		while True:
 			time.sleep(5)
 
-prot 		= MkSProtocol()
-connector 	= USBAdaptor()
-device 	  	= MkSArduinoSensor(connector, prot)
-network 	= MkSNetMachine("http://ec2-35-161-108-53.us-west-2.compute.amazonaws.com/", "ws://ec2-35-161-108-53.us-west-2.compute.amazonaws.com:8181/")
-machine		= MkSThisMachine(device, network)
-
 def main():
-	machine.AddSensor(Sensor("ac6de837-7863-72a9-c789-a0aae7e9d931", 1, 1))
-	machine.AddSensor(Sensor("ac6de837-7863-72a9-c789-a0aae7e9d932", 2, 2))
-	machine.AddSensor(Sensor("ac6de837-7863-72a9-c789-a0aae7e9d933", 4, 3))
-
-	ret = device.Connect()
-	if ret == False:
-		return 1
-
-	print "Device Found ..."
-	ret = device.GetUUID()
-	print ret
-
+	machine = MkSThisMachine()
 	machine.Run()
 
 if __name__ == "__main__":
