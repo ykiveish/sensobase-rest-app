@@ -54,6 +54,10 @@ class Network ():
 		jsonData = json.loads(data)
 		return jsonData, True
 
+	def InsertDevice (self, device):
+		data = self.GetRequest(self.ServerUri + "insert/device/" + self.UserDevKey + "/" + str(device.Type) + "/" + device.UUID + "/" + device.OSType + "/" + device.OSVersion + "/" + device.BrandName)
+		return true
+
 	def WSConnection_OnMessage_Handler (self, ws, message):
 		print message
 		data = json.loads(message)

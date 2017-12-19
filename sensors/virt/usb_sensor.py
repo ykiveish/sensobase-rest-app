@@ -4,11 +4,12 @@ import thread
 import time
 import sys
 
-import MkSSensor
-import MkSUSBAdaptor
-import MkSProtocol
-import MkSArduinoSensor
-import MkSNetMachine
+from MKSDK import MkSDevice
+from MKSDK import MkSSensor
+from MKSDK import MkSUSBAdaptor
+from MKSDK import MkSProtocol
+from MKSDK import MkSArduinoSensor
+from MKSDK import MkSNetMachine
 
 class MkSThisMachine ():
 	def __init__ (self):
@@ -40,6 +41,7 @@ class MkSThisMachine ():
 		self.Network.OnConnectionCallback  = self.WebSocketConnectedCallback
 		self.Network.OnDataArrivedCallback = self.WebSocketDataArrivedCallback
 
+		self.DeviceInfo = MkSDevice.Device(self.UUID, self.Type, self.OSType, self.OSVersion, self.BrandName)
 		self.AddSensor(MkSSensor.Sensor(self.UUID, 1, 1))
 		self.AddSensor(MkSSensor.Sensor(self.UUID, 2, 2))
 		self.AddSensor(MkSSensor.Sensor(self.UUID, 4, 3))
