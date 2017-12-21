@@ -56,7 +56,14 @@ class Network ():
 
 	def InsertDevice (self, device):
 		data = self.GetRequest(self.ServerUri + "insert/device/" + self.UserDevKey + "/" + str(device.Type) + "/" + device.UUID + "/" + device.OSType + "/" + device.OSVersion + "/" + device.BrandName)
-		return true
+
+		if ('failed' in data):
+			return "", False
+
+		if ('info' in data):
+			return data, True;
+
+		return False
 
 	def WSConnection_OnMessage_Handler (self, ws, message):
 		print message
@@ -65,10 +72,11 @@ class Network ():
 
 	def WSConnection_OnError_Handler (self, ws, error):
 	    print error
+	    self.OnErrorCallback()
 
 	def WSConnection_OnClose_Handler (self, ws):
 	    print "Connection closed ..."
-	    sys.exit()
+	    self.OnConnectionClosedCallback()
 		
 	def WSConnection_OnOpen_Handler (self, ws):
 		print "Connection to server established ..."

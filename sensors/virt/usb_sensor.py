@@ -4,12 +4,12 @@ import thread
 import time
 import sys
 
-from MKSDK import MkSDevice
-from MKSDK import MkSSensor
-from MKSDK import MkSUSBAdaptor
-from MKSDK import MkSProtocol
-from MKSDK import MkSArduinoSensor
-from MKSDK import MkSNetMachine
+from mksdk import MkSDevice
+from mksdk import MkSSensor
+from mksdk import MkSUSBAdaptor
+from mksdk import MkSProtocol
+from mksdk import MkSArduinoSensor
+from mksdk import MkSNetMachine
 
 class MkSThisMachine ():
 	def __init__ (self):
@@ -32,14 +32,16 @@ class MkSThisMachine ():
 
 		self.States = {
 			'IDLE': 	self.IdleState,
-			'ACCESS': 	self.GetAccessSatate,
+			'ACCESS': 	self.GetAccessState,
 			'PUBLISH': 	self.PublishSensorState,
 			'UPDATE': 	self.UpdateSensorState
 		}
 
 		self.Network.SetDeviceType(self.Type)
-		self.Network.OnConnectionCallback  = self.WebSocketConnectedCallback
-		self.Network.OnDataArrivedCallback = self.WebSocketDataArrivedCallback
+		self.Network.OnConnectionCallback  		= self.WebSocketConnectedCallback
+		self.Network.OnDataArrivedCallback 		= self.WebSocketDataArrivedCallback
+		self.Network.OnConnectionClosedCallback = self.WebSocketConnectionClosedCallback
+		self.Network.OnErrorCallback 			= self.WebSocketErrorCallback
 
 		self.DeviceInfo = MkSDevice.Device(self.UUID, self.Type, self.OSType, self.OSVersion, self.BrandName)
 		self.AddSensor(MkSSensor.Sensor(self.UUID, 1, 1))
@@ -56,8 +58,14 @@ class MkSThisMachine ():
 		if ret == True:
 			self.Network.UpdateSensorsWS(self.Sensors)
 
+	def WebSocketConnectionClosedCallback (self):
+		print "WebSocketConnectionClosedCallback"
+		self.State = "ACCESS"
+
+	def WebSocketErrorCallback (self):
+		print "WebSocketErrorCallback"
+
 	def AddSensor (self, sensor):
-		
 		self.Sensors.append(sensor)
 
 	def UpdateSensor (self, sensorJSON):
@@ -73,15 +81,19 @@ class MkSThisMachine ():
 		print "IdleState"
 		self.State = "ACCESS"
 
-	def GetAccessSatate (self):
-		print "GetAccessSatate"
+	def GetAccessState (self):
+		print "Get Access ..."
 		if self.Network.Connect(self.UserName, self.Password) == True:
+			print "Publish Device ..."
+			data, error = self.Network.InsertDevice(self.DeviceInfo)
+			if error == False:
+				return
 			self.State = "PUBLISH"
 
 	def PublishSensorState (self):
 		print "PublishSensorState"
 		for item in self.Sensors:
-			datam, error = self.Network.InsertBasicSesnor(item)
+			data, error = self.Network.InsertBasicSesnor(item)
 			if error == False:
 				return
 		self.State = 'UPDATE'
