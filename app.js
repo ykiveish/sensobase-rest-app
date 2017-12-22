@@ -131,7 +131,7 @@ wsServer.on('request', function(request) {
 			// Sending data to application. No check needed application will use data it needs. (user key was verified)
 			WebConnection = WebSSEClients[jsonData.key];
 			if (WebConnection != undefined) {
-				console.log ((new Date()) + " #> Sending data to web client ...");
+				console.log ((new Date()) + " #> Sending data to web client ... \n" + JSON.stringify(jsonData));
 				WebConnection.session.write("data: " + JSON.stringify(jsonData) + "\n\n");
 			}
 

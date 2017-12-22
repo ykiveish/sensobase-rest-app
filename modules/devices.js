@@ -2,29 +2,35 @@ const moment = require('moment');
 
 module.exports = function(app, security, sql) {
 	
-	app.get('/select/devices', function(req, res) {
+	app.get('/select/devices/:key', function(req, res) {
 		console.log ("METHOD /select/devices");
 		
-		sql.SelectDevices(function(err, devices) {
-			var data = [];
-			
-			for (i = 0; i < devices.length; i++) {
-				var device = {
-					id: devices[i].id,
-					userId: devices[i].user_id,
-					type: devices[i].type,
-					uuid: devices[i].uuid,
-					osType: devices[i].os_type,
-					osVersion: devices[i].os_version,
-					lastUpdateTs: devices[i].last_update_ts,
-					enabled: devices[i].enabled,
-					brandName: devices[i].brand_name,
-					name: devices[i].name,
-					description: devices[i].description
-				};
-				data.push(device);
+		security.CheckUUID(req.params.key, function (valid) {
+			if (valid) {
+				sql.SelectDevices(function(err, devices) {
+					var data = [];
+					
+					for (i = 0; i < devices.length; i++) {
+						var device = {
+							id: devices[i].id,
+							userId: devices[i].user_id,
+							type: devices[i].type,
+							uuid: devices[i].uuid,
+							osType: devices[i].os_type,
+							osVersion: devices[i].os_version,
+							lastUpdateTs: devices[i].last_update_ts,
+							enabled: devices[i].enabled,
+							brandName: devices[i].brand_name,
+							name: devices[i].name,
+							description: devices[i].description
+						};
+						data.push(device);
+					}
+					res.json(data);
+				});
+			} else {
+				res.json({error:"security issue"});
 			}
-			res.json(data);
 		});
 	});
 	
