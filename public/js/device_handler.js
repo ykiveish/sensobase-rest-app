@@ -1,4 +1,3 @@
-console.log("device_handler.js");
 function LoadDeviceHtml (name, callback) {
 	jQuery.ajax({
         url: "modules/" + name + ".html",
@@ -24,30 +23,33 @@ function DeviceSwitch (device, callback) {
 	self.Device = device;
 	self.DeviceFileName = device.type + "-device"
 	
-	LoadDeviceHtml(self.DeviceFileName, function(data) {
+	LoadDeviceHtml(self.DeviceFileName + "/" + self.DeviceFileName, function(data) {
 		htmlData = data;
 		console.log(self.Device);
 		
-		htmlData = htmlData.replace("[DEVICE_NAME]", device.name);
-		htmlData = htmlData.replace("[DEVICE_DESCRIPTION]", device.description);
+		/*
+		Replace TAGs with real data.
+		*/
+		htmlData = htmlData.split("[DEVICE_UUID]").join(self.Device.uuid);
+		htmlData = htmlData.split("[DEVICE_NAME]").join(device.name);
+		htmlData = htmlData.split("[DEVICE_DESCRIPTION]").join(device.description);
+		htmlData = htmlData.replace("[DEVICE_ICON]", "modules/" + self.DeviceFileName + "/" + self.DeviceFileName + ".png");
 		
 		switch (self.Device.type) {
 			case SMART_PHONE:
 				if (self.Device.osType == OS_ANDROID) {
 					if (self.Device.brandName == SAMSUNG_GALAXY_S3) {
-						htmlData = htmlData.replace("[DEVICE_ICON]","../images/galaxy-s3.png");
 					}
 				}
 			break;
 			case ARDUINO_BASIC:
-				htmlData = htmlData.replace("[DEVICE_ICON]","../images/arduino.png");
 			break;
 			default:
 			break;
 		}
 		
 		self.HtmlData = htmlData;
-		LoadDeviceJavascript(self.DeviceFileName, function () {
+		LoadDeviceJavascript(self.DeviceFileName + "/" + self.DeviceFileName, function(data) {
 			callback(self.HtmlData);
 		});
 	});
