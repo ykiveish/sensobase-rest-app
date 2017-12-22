@@ -1,1 +1,30 @@
-{"key":"ac6de837-7863-72a9-c789-a0aae7e9d93e","device":{"uuid":"ac6de837-7863-72a9-c789-b0aae7e9d93e","type":1000},"sensors":[{"uuid":"ac6de837-7863-72a9-c789-a0aae7e9d931","type":1,"value":23, "update_ts":5},{"uuid":"ac6de837-7863-72a9-c789-a0aae7e9d932","type":2,"value":23, "update_ts":5},{"uuid":"ac6de837-7863-72a9-c789-a0aae7e9d933","type":3,"value":23, "update_ts":5},{"uuid":"ac6de837-7863-72a9-c789-a0aae7e9d934","type":4,"value":1, "update_ts":5},{"uuid":"ac6de837-7863-72a9-c789-a0aae7e9d935","type":5,"value":23, "update_ts":5}]}
+{
+	"key":"ac6de837-7863-72a9-c789-a0aae7e9d93e",
+	"username":"ykiveish",
+	"password":"1234",
+	"apiurl":"http://ec2-35-161-108-53.us-west-2.compute.amazonaws.com/",
+	"wsurl":"ws://ec2-35-161-108-53.us-west-2.compute.amazonaws.com:8181/",
+	"device":
+	{
+		"uuid":"ac6de837-7863-72a9-c789-b0aae7e9d93e",
+		"type":1000,
+		"ostype":"Linux",
+		"osversion":"Unknown",
+		"brandname":"MakeSense-Arduino-Basic"
+	},
+	"sensors":
+	[
+		{ 
+			"id":"1",
+			"type":1
+		},
+		{
+			"id":"2",
+			"type":2
+		},
+		{
+			"id":"3",
+			"type":4
+		}
+	]
+}
