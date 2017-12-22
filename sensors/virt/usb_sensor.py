@@ -3,6 +3,8 @@ import os
 import thread
 import time
 import sys
+import json
+import signal
 
 from mksdk import MkSDevice
 from mksdk import MkSSensor
@@ -10,18 +12,20 @@ from mksdk import MkSUSBAdaptor
 from mksdk import MkSProtocol
 from mksdk import MkSArduinoSensor
 from mksdk import MkSNetMachine
+from mksdk import MkSFile
 
 class MkSThisMachine ():
 	def __init__ (self):
-		self.ApiUrl 	= "http://ec2-35-161-108-53.us-west-2.compute.amazonaws.com/"
-		self.WsUrl		= "ws://ec2-35-161-108-53.us-west-2.compute.amazonaws.com:8181/"
-		self.UserName 	= "ykiveish"
-		self.Password 	= "1234"
+		self.ApiUrl 	= ""
+		self.WsUrl		= ""
+		self.UserName 	= ""
+		self.Password 	= ""
 		self.Sensors 	= []
 		self.Protocol	= MkSProtocol.Protocol()
 		self.Connector 	= MkSUSBAdaptor.Adaptor()
 		self.Device 	= MkSArduinoSensor.ArduinoSensor(self.Connector, self.Protocol)
 		self.Network	= MkSNetMachine.Network(self.ApiUrl, self.WsUrl)
+		self.File 		= MkSFile.File()
 		self.Type 		= 1000
 		self.UUID 		= "ac6de837-7863-72a9-c789-b0aae7e9d93e"
 		self.OSType 	= "Linux"
@@ -29,6 +33,7 @@ class MkSThisMachine ():
 		self.BrandName 	= "MakeSense-Virtual"
 		self.State 		= 'IDLE'
 		self.Delay 		= 1;
+		self.IsRunnig 	= True;
 
 		self.States = {
 			'IDLE': 	self.IdleState,
@@ -79,6 +84,36 @@ class MkSThisMachine ():
 
 	def IdleState (self):
 		print "IdleState"
+		jsonSystemStr = self.File.LoadStateFromFile("system.json")
+		jsonSensorStr = self.File.LoadStateFromFile("data.json")
+		
+		try:
+			dataSystem = json.loads(jsonSystemStr)
+		except:
+			print "Error: system.json incorrect"
+			self.Exit()
+		
+		self.ApiUrl 	= dataSystem["apiurl"]
+		self.WsUrl		= dataSystem["wsurl"]
+		self.UserName 	= dataSystem["username"]
+		self.Password 	= dataSystem["password"]
+		
+		self.Network.SetApiUrl(self.ApiUrl)
+		self.Network.SetWsUrl(self.WsUrl)
+		
+		self.Type 		= dataSystem["device"]["type"]
+		self.UUID 		= dataSystem["device"]["uuid"]
+		self.OSType 	= dataSystem["device"]["ostype"]
+		self.OSVersion 	= dataSystem["device"]["osversion"]
+		self.BrandName 	= dataSystem["device"]["brandname"]
+		
+		# Convert to Json.
+		data = json.loads(jsonSensorStr)
+		# Itterate over sensors and update local storage. 
+		for sensor in data["sensors"]:
+			ret = self.UpdateSensor(sensor)
+		print "Device state loaded ..."
+	
 		self.State = "ACCESS"
 
 	def GetAccessState (self):
@@ -104,11 +139,17 @@ class MkSThisMachine ():
 			DeviceId, Value = self.Device.GetSensor(item.ID)
 			item.Value = Value
 
-		self.Network.UpdateSensorsWS(self.Sensors)
+		self.File.SaveStateToFile("data.json", self.Network.BuildJSONFromBasicSensorList(self.Sensors))
+		ret = self.Network.UpdateSensorsWS(self.Sensors)
+		
+		# If device failed to update WS we need to try access server again
+		if ret == False:
+			self.State = "ACCESS"
+			
 		self.Delay = 10
 		
 	def MachineStateWorker (self):
-		while True:
+		while self.IsRunnig:
 			self.Method = self.States[self.State]
 			self.Method()
 			time.sleep(self.Delay)
@@ -121,13 +162,21 @@ class MkSThisMachine ():
 		self.UUID = self.Device.GetUUID()
 		self.Network.SetDeviceUUID(self.UUID)
 		thread.start_new_thread(self.MachineStateWorker, ())
-		while True:
+		while self.IsRunnig:
 			time.sleep(5)
 
 		self.Connector.DisconnectDevice()
+	
+	def Exit (self):
+		self.IsRunnig = False
+		sys.exit(1);
 
+machine = MkSThisMachine()
+def signal_handler(signal, frame):
+	machine.Exit()
+	
 def main():
-	machine = MkSThisMachine()
+	signal.signal(signal.SIGINT, signal_handler)
 	machine.Run()
 
 if __name__ == "__main__":

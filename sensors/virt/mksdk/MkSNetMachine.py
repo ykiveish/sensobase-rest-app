@@ -110,6 +110,12 @@ class Network ():
 
 	def SetDeviceType (self, type):
 		self.Type = type;
+		
+	def SetApiUrl (self, url):
+		self.ServerUri = url;
+		
+	def SetWsUrl (self, url):
+		self.WSServerUri = url;
 
 	def SendWebSocket(self, payload):
 		self.WSConnection.send(payload)
@@ -131,5 +137,9 @@ class Network ():
 	def UpdateSensorsWS(self, sensors):
 		if (len(sensors) > 0):
 			payload = self.BuildJSONFromBasicSensorList(sensors)
-			self.SendWebSocket(payload)
-
+			try:
+				self.SendWebSocket(payload)
+			except:
+				return False
+		
+		return True		
