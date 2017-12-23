@@ -39,6 +39,21 @@ module.exports = function(app, security, sql, iotClients, iotTable) {
 			}
 		});
 	});
+	
+	app.get('/select/sensor/basic/:key/:deviceuuid', function(req, res) {
+		console.log ("METHOD /select/sensor/basic ByDevice");
+
+		// Checking user key for validity.
+		security.CheckUUID(req.params.key, function (valid) {
+			if (valid) {
+				sql.SelectBasicSensorByDeviceUUID(req.params.deviceuuid, function(err, sensors) {
+					res.json(sensors);
+				});
+			} else {
+				res.json({error:"security issue"});
+			}
+		});
+	});
 
 	app.get('/insert/sensor/basic/:key/:deviceuuid/:uuid/:type/:value', function(req, res) {
 		console.log ("METHOD /insert/sensor/basic " + req.params.uuid);

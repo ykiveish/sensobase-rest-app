@@ -636,7 +636,52 @@ SqliteDB.prototype.SelectBasicSensorByUUID = function(uuid, callback) {
 							enabled: rows[0].enabled,
 							deviceUUID: rows[0].device_uuid,
 						};
+						
 						callback(null, sensor);
+						return;
+					}
+				}
+
+				callback(null, null);
+			});		
+		} catch (error) {
+			console.log ("SQLITE ERROR");
+			callback({error:"ERROR"}, null);
+		}
+	});
+}
+
+SqliteDB.prototype.SelectBasicSensorByDeviceUUID = function(uuid, callback) {
+	var sql = this.db;
+	console.log ("DATABASE SelectBasicSensorByUUID");
+
+	sql.serialize(function() {
+		var query = "SELECT `tbl_basic_sensors`.*, `tbl_devices`.uuid as device_uuid  FROM `tbl_basic_sensors` INNER JOIN `tbl_devices` ON `tbl_basic_sensors`.device_id = `tbl_devices`.id WHERE `tbl_devices`.uuid='" + uuid + "';";
+		
+		try {
+			sql.all(query, function(err, rows) {
+				if (rows == null) {
+				} else {
+					if (rows.length > 0) {
+						var sensors = [];
+						
+						for (i = 0; i < rows.length; i++) {
+							var sensor = {
+								id: rows[i].id,
+								uuid: rows[i].uuid,
+								name: rows[i].name,
+								value: rows[i].value,
+								type: rows[i].type,
+								userId: rows[i].user_id,
+								deviceId: rows[i].device_id,
+								lastUpdateTs: rows[i].last_update_ts,
+								enabled: rows[i].enabled,
+								deviceUUID: rows[i].device_uuid,
+							};
+							sensors.push(sensor);
+						}
+						
+						callback(null, sensors);
 						return;
 					}
 				}
