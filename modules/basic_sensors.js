@@ -1,7 +1,7 @@
 const moment = require('moment');
 
-module.exports = function(app, security, sql, iotClients, iotTable) {
-
+module.exports = function(app, security, sql, iotClients, iotTable, storage) {
+	
     app.get('/delete/sensor/basic/:key', function(req, res) {
 		console.log ("METHOD /select/sensor/basic ALL");
 
@@ -15,6 +15,17 @@ module.exports = function(app, security, sql, iotClients, iotTable) {
 						res.json(sensors);
 					});
 				});
+			} else {
+				res.json({error:"security issue"});
+			}
+		});
+	});
+	
+	app.get('/get/sensor/basic/:key/:deviceuuid', function(req, res) {
+		console.log ("METHOD /get/sensor/basic");
+		security.CheckUUID(req.params.key, function (valid) {
+			if (valid) {
+				res.end(JSON.stringify(storage.SensorListDictWebSocket[req.params.deviceuuid]));
 			} else {
 				res.json({error:"security issue"});
 			}

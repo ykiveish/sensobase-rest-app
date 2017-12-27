@@ -34,9 +34,6 @@ var DeviceListDictSSE = {};
 
 var UserDevKey = "ac6de837-7863-72a9-c789-a0aae7e9d93e";
 
-require('./modules/devices.js')(app, security, sql);
-require('./modules/basic_sensors.js')(app, security, sql, IOTClients, IOTClientsTable);
-
 var server = http.createServer(function(request, response) {});
 server.listen(8181, function() { });
 
@@ -80,6 +77,9 @@ function LocalStorage (sql) {
 	return this;
 }
 var Local = LocalStorage(sql);
+
+require('./modules/devices.js')(app, security, sql);
+require('./modules/basic_sensors.js')(app, security, sql, IOTClients, IOTClientsTable, Local);
 
 Local.LoadUsers ();
 
@@ -125,6 +125,7 @@ wsServer.on('request', function(request) {
 			// Saving device in server local database for monitoring.
 			jsonData.device.timestamp = moment().unix();
 			Local.DeviceListDictWebSocket[jsonData.device.uuid] = jsonData.device;
+			Local.SensorListDictWebSocket[jsonData.device.uuid] = jsonData.sensors;
 			
 			// TODO - Save to SQLite database.
 			

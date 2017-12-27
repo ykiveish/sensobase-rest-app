@@ -30,6 +30,12 @@ function ResetPage() {
 var objStorage = Storage();
 $(document).ready(function() {
 	LogoutHandler();
+	
+	var info = {
+		key: localStorage.getItem("key"),
+		url: GetServerUrl(),
+	};
+	MkSRegisterToSensorListener(info);
 	// On load we need to get all user devices
 	GetDevices();
 });

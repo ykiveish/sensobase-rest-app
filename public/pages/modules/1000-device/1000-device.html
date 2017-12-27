@@ -3,7 +3,7 @@
 		<div class="panel-heading">
 			<div class="row">
 				<div class="col-xs-3">
-					<img width="70px" src="[DEVICE_ICON]" onClick="OpenInfoModalWindow_Device_1000('[DEVICE_UUID]');"/>
+					<img width="70px" src="[DEVICE_ICON]"/>
 				</div>
 				<div class="col-xs-9 text-right">
 					<div class="midium">[DEVICE_NAME]</div>
@@ -12,48 +12,80 @@
 			</div>
 		</div>
 		<div class="panel-footer">
-			<div>Connected</div>
+			<div class="row">
+				<div class="col-xs-3">
+					Connected
+				</div>
+				<div class="col-xs-9 text-right">
+					<a href="#" onClick="OpenInfoModalWindow_Device_1000('[DEVICE_UUID]');">View<a/>
+				</div>
+			</div>
 		</div>
 	</div>
-	<div class="modal fade" id="[DEVICE_UUID]-modal" tabindex="-1" role="dialog" aria-labelledby="[DEVICE_UUID]-info-modal-label" aria-hidden="true">
-		<div class="modal-dialog">
-			<div class="modal-content">
-				<div class="modal-header">
-					<button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
-					<h4 class="modal-title" id="[DEVICE_UUID]-info-modal-label">Device Info</h4>
-				</div>
-				<div class="modal-body" id="infoContent">
-					<div class="panel-body">
-						<form role="form">
-							<fieldset>
-								<div class="form-group">
-									<input id="[DEVICE_UUID]-device-name" class="form-control" placeholder="Device Name" name="devicename" type="devicename" value="[DEVICE_NAME]">
-								</div>
-								<div class="form-group">
-									<input id="[DEVICE_UUID]-device-description" class="form-control" placeholder="Device Description" name="devicedescription" type="devicedescription" value="[DEVICE_DESCRIPTION]">
-								</div>
-								<fieldset disabled>
+</div>
+<div class="modal fade" id="[DEVICE_UUID]-modal" tabindex="-1" role="dialog" aria-labelledby="[DEVICE_UUID]-info-modal-label" aria-hidden="true">
+	<div class="modal-dialog">
+		<div class="modal-content">
+			<div class="modal-header">
+				<button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
+				<h4 class="modal-title" id="[DEVICE_UUID]-info-modal-label">Device Info</h4>
+			</div>
+			<div class="modal-body" id="infoContent">
+				<div class="panel-body">
+					<div class="panel panel-default">
+						<div class="panel-heading">
+							<i class="fa fa-bell fa-fw"></i> Device
+						</div>
+						<div class="panel-body">
+							<form role="form">
+								<fieldset>
 									<div class="form-group">
-										<input id="[DEVICE_UUID]-device-uuid" class="form-control" placeholder="Device UUID" name="deviceuuid" type="deviceuuid" value="[DEVICE_UUID]">
+										<input id="[DEVICE_UUID]-device-name" class="form-control" placeholder="Device Name" name="devicename" type="devicename" value="[DEVICE_NAME]">
+									</div>
+									<div class="form-group">
+										<input id="[DEVICE_UUID]-device-description" class="form-control" placeholder="Device Description" name="devicedescription" type="devicedescription" value="[DEVICE_DESCRIPTION]">
+									</div>
+									<fieldset disabled>
+										<div class="form-group">
+											<label>UUID</label>
+											<input id="[DEVICE_UUID]-device-uuid" class="form-control" placeholder="Device UUID" name="deviceuuid" type="deviceuuid" value="[DEVICE_UUID]">
+										</div>
+									</fieldset>
+									<div class="form-group">
+										<div class="row">
+											<div class="col-xs-10">
+												<label>Sensor update period</label>
+											</div>
+											<div class="col-xs-2">
+												<input id="[DEVICE_UUID]-device-update_delay" class="form-control" value="10">
+											</div>
+										</div>
+									</div>
+									<div class="form-group">
+										<label class="checkbox-inline">
+											<input type="checkbox" value="">Enable "On sensor change update"
+										</label>
+									</div>
+									<div class="form-group">
+										<button type="button" class="btn btn-primary pull-right" onClick="UpdateDeviceInfo_Device_1000('[DEVICE_UUID]')">Update Changes</button>
 									</div>
 								</fieldset>
-							</fieldset>
-						</form>
-						<div class="panel panel-default">
-							<div class="panel-heading">
-								<i class="fa fa-bell fa-fw"></i> Sensors
+							</form>
+						</div>
+					</div>
+					<div class="panel panel-default">
+						<div class="panel-heading">
+							<i class="fa fa-bell fa-fw"></i> Sensors
+						</div>
+						<div class="panel-body">
+							<div id="[DEVICE_UUID]-modal-sensors" class="list-group">
 							</div>
-							<div class="panel-body">
-								<div id="[DEVICE_UUID]-modal-sensors" class="list-group">
-								</div>
-							</div>
-                        </div>
+						</div>
 					</div>
 				</div>
-				<div class="modal-footer">
-					<button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
-					<button type="button" class="btn btn-primary" onClick="UpdateDeviceInfo_Device_1000('[DEVICE_UUID]')">Update Changes</button>
-				</div>
+			</div>
+			<div class="modal-footer">
+				<button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
 			</div>
 		</div>
 	</div>

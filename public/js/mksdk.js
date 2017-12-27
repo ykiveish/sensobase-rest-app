@@ -1,31 +1,64 @@
-/*
-if (!!window.EventSource) {
-	var source = new EventSource(url + "register_devices_update_event/" + UserDEVKey);
-	console.log ((new Date()) + " #> Registered to sensor stream [" + UserDEVKey + "]");
-} else {
-	console.log ((new Date()) + " #> [ERROR] Resister to sensor stream [" + UserDEVKey + "]");
+function Instance() {
+	self = this;
+	
+	this.StreamSource = null;
+	this.DeviceListeners = {};
+	
+	return this;
+}
+var objInstance = Instance();
+
+function MkSRegisterToSensorListener(obj) {
+	if (!!window.EventSource) {
+		console.log ((new Date()) + " #> Registered to sensor stream [" + obj.key + "]");
+		objInstance.StreamSource = new EventSource(obj.url + "register_devices_update_event/" + obj.key);
+		
+		objInstance.StreamSource.addEventListener('message', function(e) {
+			if (e.data != null) {
+				var jsonData = JSON.parse(e.data);
+				if (jsonData.device != null) {
+					listeners = objInstance.DeviceListeners[jsonData.device.uuid];
+					for (var index in listeners) {
+						listener = listeners[index];
+						listeners.splice(listeners.indexOf(listener), 1);
+						listener(jsonData);
+					}
+				}
+			}
+		}, false);
+
+		objInstance.StreamSource.addEventListener('open', function(e) {
+			console.log((new Date()) + " #> OPEN");
+		}, false);
+
+		objInstance.StreamSource.addEventListener('error', function(e) {
+			console.log((new Date()) + " #> ERROR");
+			if (e.readyState == EventSource.CLOSED) {
+
+			}
+		}, false);
+	} else {
+		console.log ((new Date()) + " #> [ERROR] Resister to sensor stream [" + obj.key + "]");
+	}
 }
 
-source.addEventListener('message', function(e) {
-	// Add sensors and device to local storage.
-	if (e.data != null) {
-		var jsonData = JSON.parse(e.data);
-		if (jsonData.sensors != null) {
-		}
+function MkSAddDeviceListener(deviceUuid, fn) {
+	var listners = objInstance.DeviceListeners[deviceUuid];
+	if (listners == undefined) {
+		listners = [];
 	}
-}, false);
+	
+	listners.push(fn);
+	objInstance.DeviceListeners[deviceUuid] = listners;
+}
 
-source.addEventListener('open', function(e) {
-	console.log((new Date()) + " #> OPEN");
-}, false);
-
-source.addEventListener('error', function(e) {
-	console.log((new Date()) + " #> ERROR");
-	if (e.readyState == EventSource.CLOSED) {
-
+function MkSRemoveDeviceListener(deviceUuid, fn) {
+	var listeners = objInstance.DeviceListeners[deviceUuid];
+	if (listeners != undefined) {
+		listeners.splice(listeners.indexOf(fn), 1);
 	}
-}, false);
-*/
+}
+
 function MkSUpdateDevice(obj, callback) {
 	$.ajax({
 	    url: obj.url + 'update/device/' + obj.key + "/" + obj.uuid + "/" + obj.name + "/" + obj.description + "/" + obj.enable,
@@ -35,9 +68,27 @@ function MkSUpdateDevice(obj, callback) {
 	});
 }
 
+function MkSUpdateSensorValue (obj, callback) {
+	$.ajax({
+	    url: obj.url + 'update/sensor/basic/value/' + obj.key + '/' + obj.deviceUuid + '/' + obj.sensorUuid + '/' + obj.value,
+	    type: "GET",
+	    dataType: "json",
+	    success: callback
+	});
+}
+
 function MkSGetUserBasicSensorsByDevice(obj, callback) {
 	$.ajax({
 	    url: obj.url + 'select/sensor/basic/' + obj.key + "/" + obj.uuid,
+	    type: "GET",
+	    dataType: "json",
+	    success: callback
+	});
+}
+
+function MkSGetUserBasicSensorsFromCacheByDevice(obj, callback) {
+	$.ajax({
+	    url: obj.url + 'get/sensor/basic/' + obj.key + "/" + obj.uuid,
 	    type: "GET",
 	    dataType: "json",
 	    success: callback
