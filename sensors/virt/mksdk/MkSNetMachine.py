@@ -81,7 +81,6 @@ class Network ():
 	def WSConnection_OnOpen_Handler (self, ws):
 		print "Connection to server established ..."
 		self.OnConnectionCallback()
-		#SaveState()
 
 	def WSWorker (self):
 		self.WSConnection.run_forever()
