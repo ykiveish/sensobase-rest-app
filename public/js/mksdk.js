@@ -59,9 +59,18 @@ function MkSRemoveDeviceListener(deviceUuid, fn) {
 	}
 }
 
-function MkSUpdateDevice(obj, callback) {
+function MkSUpdateDeviceOnServer(obj, callback) {
 	$.ajax({
 	    url: obj.url + 'update/device/' + obj.key + "/" + obj.uuid + "/" + obj.name + "/" + obj.description + "/" + obj.enable,
+	    type: "GET",
+	    dataType: "json",
+	    success: callback
+	});
+}
+
+function MkSDeviceStatus(obj, callback) {
+	$.ajax({
+	    url: obj.url + 'get/device/node/status/' + obj.key + "/" + obj.uuid,
 	    type: "GET",
 	    dataType: "json",
 	    success: callback

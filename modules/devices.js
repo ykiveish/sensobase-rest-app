@@ -1,6 +1,6 @@
 const moment = require('moment');
 
-module.exports = function(app, security, sql) {
+module.exports = function(app, security, sql, iotClients, iotTable, storage) {
 	
 	app.get('/select/devices/:key', function(req, res) {
 		console.log ("METHOD /select/devices");
@@ -28,6 +28,34 @@ module.exports = function(app, security, sql) {
 					}
 					res.json(data);
 				});
+			} else {
+				res.json({error:"security issue"});
+			}
+		});
+	});
+	
+	app.get('/get/device/node/status/:key/:uuid', function(req, res) {
+		console.log ("METHOD get/device/node/status/:key/:uuid");
+		
+		security.CheckUUID(req.params.key, function (valid) {
+			if (valid) {
+				var connection = iotClients[iotTable[req.params.uuid]];
+				connection.send("{\"cmd\":\"status\",\"data\":{}");
+				res.json({response:"none"});
+			} else {
+				res.json({error:"security issue"});
+			}
+		});
+	});
+	
+	app.get('/get/device/node/direct/:key/:uuid/:data', function(req, res) {
+		console.log ("METHOD get/device/node/direct/:key/:uuid/:data");
+		
+		security.CheckUUID(req.params.key, function (valid) {
+			if (valid) {
+				var connection = iotClients[iotTable[req.params.uuid]];
+				connection.send("{\"cmd\":\"direct\",\"data\":{" + req.params.data + "}}");
+				res.json({response:"none"});
 			} else {
 				res.json({error:"security issue"});
 			}

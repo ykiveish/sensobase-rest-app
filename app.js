@@ -78,7 +78,7 @@ function LocalStorage (sql) {
 }
 var Local = LocalStorage(sql);
 
-require('./modules/devices.js')(app, security, sql);
+require('./modules/devices.js')(app, security, sql, IOTClients, IOTClientsTable, Local);
 require('./modules/basic_sensors.js')(app, security, sql, IOTClients, IOTClientsTable, Local);
 
 Local.LoadUsers ();
@@ -115,28 +115,37 @@ wsServer.on('request', function(request) {
 			connection.LastMessageData = message.utf8Data;
 			jsonData = JSON.parse(message.utf8Data);
 			
+			if (jsonData.data === undefined) {
+				return;
+			}
+			
+			if (jsonData.data.key === undefined) {
+				return;
+			}
+			
 			// Verifing the key from this message.
-			var MassageKey = jsonData.key;
+			var MassageKey = jsonData.data.key;
 			if (Local.UserDictionary[MassageKey] === undefined) {
 				console.log((new Date()) + " [ERROR] User with KEY " + MassageKey + " is NOT DEFINED.");
 				return;
 			}
 			
 			// Saving device in server local database for monitoring.
-			jsonData.device.timestamp = moment().unix();
-			Local.DeviceListDictWebSocket[jsonData.device.uuid] = jsonData.device;
-			Local.SensorListDictWebSocket[jsonData.device.uuid] = jsonData.sensors;
+			jsonData.data.device.timestamp = moment().unix();
+			if (jsonData.cmd == "direct") {
+			} else {
+				Local.DeviceListDictWebSocket[jsonData.data.device.uuid] = jsonData.data.device;
+				Local.SensorListDictWebSocket[jsonData.data.device.uuid] = jsonData.data.sensors;
+				// TODO - Save to SQLite database.
 			
-			// TODO - Save to SQLite database.
-			
-			// Sending data to application. No check needed application will use data it needs. (user key was verified)
-			WebConnection = WebSSEClients[jsonData.key];
-			if (WebConnection != undefined) {
-				console.log ((new Date()) + " #> Sending data to web client ... \n" + JSON.stringify(jsonData));
-				WebConnection.session.write("data: " + JSON.stringify(jsonData) + "\n\n");
+				// Sending data to application. No check needed application will use data it needs. (user key was verified)
+				WebConnection = WebSSEClients[jsonData.data.key];
+				if (WebConnection != undefined) {
+					// console.log ((new Date()) + " #> Sending data to web client ... \n" + JSON.stringify(jsonData.data));
+					WebConnection.session.write("data: " + JSON.stringify(jsonData.data) + "\n\n");
+				}
 			}
-
-		} else if (message.type === 'binary') {
+	} else if (message.type === 'binary') {
 			console.log((new Date()) + 'Received Binary Message of ' + message.binaryData.length + ' bytes');
 			connection.sendBytes(message.binaryData);
 		}

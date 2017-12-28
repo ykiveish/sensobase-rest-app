@@ -131,7 +131,7 @@ module.exports = function(app, security, sql, iotClients, iotTable, storage) {
 							// Update value of the sensor.
 							sql.UpdateBasicSensorValue(req.params.uuid, req.params.value, function (err) {
 								var connection = iotClients[iotTable[req.params.deviceuuid]];
-								connection.send("{\"uuid\":\"" + req.params.uuid + "\",\"value\":" + req.params.value + "}");
+								connection.send("{\"cmd\":\"set_sensor\",\"data\":{\"uuid\":\"" + req.params.uuid + "\",\"value\":" + req.params.value + "}}");
 								res.json(err);
 							});
 						}
