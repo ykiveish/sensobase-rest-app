@@ -59,9 +59,18 @@ class MkSThisMachine ():
 
 	def WebSocketDataArrivedCallback (self, json):
 		print "WebSocketDataArrivedCallback"
-		ret = self.UpdateSensor(json)
-		if ret == True:
-			self.Network.UpdateSensorsWS(self.Sensors)
+		command = self.Network.GetCommandFromJson(json)
+		if (command == "set_sensor"):
+			data = self.Network.GetDataFromJson(json)
+			ret = self.UpdateSensor(data)
+			if ret == True:
+				self.Network.UpdateSensorsWS(self.Sensors)
+		elif (command == "status"):
+			print "Return STATUS"
+		elif (command == "direct"):
+			print "Return DIRECT"
+		else:
+			print "Error: Not support " + command + " command."
 
 	def WebSocketConnectionClosedCallback (self):
 		print "WebSocketConnectionClosedCallback"
@@ -107,12 +116,13 @@ class MkSThisMachine ():
 		self.OSVersion 	= dataSystem["device"]["osversion"]
 		self.BrandName 	= dataSystem["device"]["brandname"]
 		
-		# Convert to Json.
-		data = json.loads(jsonSensorStr)
-		# Itterate over sensors and update local storage. 
-		for sensor in data["sensors"]:
-			ret = self.UpdateSensor(sensor)
-		print "Device state loaded ..."
+		if jsonSensorStr != "":
+			# Convert to Json.
+			data = json.loads(jsonSensorStr)
+			# Itterate over sensors and update local storage. 
+			for sensor in data["sensors"]:
+				ret = self.UpdateSensor(sensor)
+			print "Device state loaded ..."
 	
 		self.State = "ACCESS"
 

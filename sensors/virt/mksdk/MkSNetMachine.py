@@ -119,6 +119,14 @@ class Network ():
 	def SendWebSocket(self, payload):
 		self.WSConnection.send(payload)
 
+	def BuildJSONFromBasicSensorListToHost (self, sensors):
+		payload = "{\"cmd\":\"sensors_publish\",\"data\":{\"key\":\"" + str(self.UserDevKey) + "\",\"device\":{\"uuid\":\"" + str(self.DeviceUUID) + "\",\"type\":" + str(self.Type) + "},\"sensors\":["
+		for item in sensors:
+			payload += "{\"uuid\":\"" + str(item.UUID) + "\",\"type\":" + str(item.Type) + ",\"value\":" + str(item.Value) + ", \"update_ts\":5},"
+		payload = payload[:-1]
+		payload += "]}}"
+		return payload
+	
 	def BuildJSONFromBasicSensorList (self, sensors):
 		payload = "{\"key\":\"" + str(self.UserDevKey) + "\",\"device\":{\"uuid\":\"" + str(self.DeviceUUID) + "\",\"type\":" + str(self.Type) + "},\"sensors\":["
 		for item in sensors:
@@ -132,10 +140,16 @@ class Network ():
 
 	def GetValueFromJson(self, json):
 		return json['value']
+	
+	def GetCommandFromJson(self, json):
+		return json['cmd']
 
+	def GetDataFromJson(self, json):
+		return json['data']
+		
 	def UpdateSensorsWS(self, sensors):
 		if (len(sensors) > 0):
-			payload = self.BuildJSONFromBasicSensorList(sensors)
+			payload = self.BuildJSONFromBasicSensorListToHost(sensors)
 			try:
 				self.SendWebSocket(payload)
 			except:

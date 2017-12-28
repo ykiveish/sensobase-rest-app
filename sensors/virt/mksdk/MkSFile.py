@@ -12,7 +12,9 @@ class File ():
 		file.close()
 	
 	def LoadStateFromFile (self, filename):
-		file = open(filename, "r")
-		data = file.read()
-		file.close()
-		return data
+		if os.path.isfile(filename) == True:
+			file = open(filename, "r")
+			data = file.read()
+			file.close()
+			return data
+		return ""
