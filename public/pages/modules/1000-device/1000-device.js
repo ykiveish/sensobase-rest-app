@@ -2,8 +2,7 @@
  * All these methods below are required to be defined.
  */
 
-function OnDeviceLoaded_1000(uuid) {
-	console.log("OnDeviceLoaded_1000");
+function DeviceStatus(uuid) {
 	request = {
 		url: GetServerUrl(),
 		key: localStorage.getItem("key"),
@@ -20,6 +19,11 @@ function OnDeviceLoaded_1000(uuid) {
 			document.getElementById(uuid + "-status-external").style.color = "green";
 		}
 	});
+}
+
+function OnDeviceLoaded_1000(uuid) {
+	console.log("OnDeviceLoaded_1000");
+	DeviceStatus(uuid);
 }
 
 function GetSensorsData_Handler(data) {
@@ -149,6 +153,8 @@ function OpenInfoModalWindow_Device_1000(uuid) {
 					}
 				}
 			});
+
+			DeviceStatus(self.Device.uuid);
 		}
 	});
 }
