@@ -13,15 +13,32 @@ class ArduinoSensor ():
 
 	def Connect (self):
 		idx = 1
+		deviceFound = False
 		for item in self.Adaptor.Interfaces:
-			isConnected = self.Adaptor.ConnectDevice(idx)
+			isConnected = self.Adaptor.ConnectDevice(idx, 3)
 			if isConnected == True:
 				txPacket = self.Protocol.GetDeviceTypeCommand()
 				rxPacket = self.Adaptor.Send(txPacket)
-				magic_one, magic_two, op_code, content_length = struct.unpack("BBHB", rxPacket[0:5])
-				deviceType = rxPacket[5:]
-				return True
+				if (len(rxPacket) > 5):
+					magic_one, magic_two, op_code, content_length = struct.unpack("BBHB", rxPacket[0:5])
+					if (magic_one == 0xde and magic_two == 0xad):
+						deviceType = rxPacket[5:]
+						deviceFound = True
+						self.Adaptor.DisconnectDevice()
+						break
+					else:
+						self.Adaptor.DisconnectDevice()
+						print "Not a MakeSense complient device... "
+				else:
+					self.Adaptor.DisconnectDevice()
+					print "Not a MakeSense complient device... "
+
 			idx = idx + 1
+
+		if deviceFound == True:
+			isConnected = self.Adaptor.ConnectDevice(idx, 0)
+			if isConnected == True:
+				return True
 
 		return False
 

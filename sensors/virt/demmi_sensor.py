@@ -78,11 +78,26 @@ def LoadState ():
 		UpdateSensorFromJson (sensor)
 	print "Device state loaded ..."
 
-# {"uuid":"sesnsor-uuid","value":value}
+# 	{ 	
+#		"cmd":"<CMD>",
+#		"data":
+#		{ 
+#			"uuid":"sesnsor-uuid",
+#			"value":value 
+#		}
+#	}
 def on_message (ws, message):
 	print message
-	data = json.loads(message)
-	UpdateSensorFromJson (data)
+	#data = json.loads(message)
+	
+	#command = data["cmd"]
+	#if (command == "set_sensor"):
+	#	print "set_sensor"
+	#	UpdateSensorFromJson (data["data"])
+	#elif (command == "status"):
+	#	print "Return STATUS"
+	#else:
+	#	print "Error: Not support " + command + " command."
 
 def on_error (ws, error):
     print error
