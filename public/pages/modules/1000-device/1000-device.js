@@ -2,8 +2,24 @@
  * All these methods below are required to be defined.
  */
 
-function Init_Device_1000(uuid) {
-	// Add initiate logic here.
+function OnDeviceLoaded_1000(uuid) {
+	console.log("OnDeviceLoaded_1000");
+	request = {
+		url: GetServerUrl(),
+		key: localStorage.getItem("key"),
+		uuid: uuid
+	};
+	MkSDeviceStatus(request, function(data) {
+		if (data.errno !== undefined) {
+			if (data.errno == 10) {
+				document.getElementById(uuid + "-status-external").innerHTML = "Disconnected";
+				document.getElementById(uuid + "-status-external").style.color = "red";
+			}
+		} else {
+			document.getElementById(uuid + "-status-external").innerHTML = "Connected";
+			document.getElementById(uuid + "-status-external").style.color = "green";
+		}
+	});
 }
 
 function GetSensorsData_Handler(data) {
@@ -38,26 +54,21 @@ function GetSensorsData_Handler(data) {
 
 function OpenInfoModalWindow_Device_1000(uuid) {
 	var self = this;
-	self.DeviceUuid = uuid;
 	
 	console.log("OpenInfoModalWindow_Device_1000");
 	$('#' + uuid + '-modal').modal('show');
 	
 	MkSRemoveDeviceListener(uuid, GetSensorsData_Handler);
 	MkSAddDeviceListener(uuid, GetSensorsData_Handler);
-	
-	self.device = {
+
+	self.Device = {
 		url: GetServerUrl(),
 		key: localStorage.getItem("key"),
 		uuid: uuid
 	};
 	
-	MkSDeviceStatus(self.device, function(data) {
-		
-	});
-	
-	MkSGetUserBasicSensorsByDevice(device, function (data) {
-		console.log(self.DeviceUuid);
+	MkSGetUserBasicSensorsByDevice(self.Device, function (data) {
+		console.log(self.Device.uuid);
 		if (data.length > 0) {
 			html = "<form role=\"form\"><fieldset><div class=\"form-group\">";
 			for (i = 0; i < data.length; i++) {
@@ -98,7 +109,7 @@ function OpenInfoModalWindow_Device_1000(uuid) {
 						"<div class=\"col-xs-1\"><img width=\"30px\" src=\"../images/basic_sensors/switch.png\"/></div>" +
 						"<div class=\"col-xs-6\"><input class=\"form-control\" id=\"" + data[i].uuid + "-name\" value=\"" + data[i].name + "\"></div>" +
 						"<div class=\"col-xs-3\"><label style=\"cursor: pointer\" onclick=\"\" onmouseover=\"onMouseOverUpdateLink(this);\" onmouseout=\"onMouseOutUpdateLink(this);\">Update</label></div>" +
-						"<div class=\"col-xs-2\" onclick=\"onClickSwitch('" + data[i].uuid + "','" + self.DeviceUuid + "');\"><input id=\"" + data[i].uuid + "_toggle\" type=\"checkbox\" data-toggle=\"toggle\" data-onstyle=\"success\" value=\"" + data[i].value + "\" data-offstyle=\"danger\"></div>" +
+						"<div class=\"col-xs-2\" onclick=\"onClickSwitch('" + data[i].uuid + "','" + self.Device.uuid + "');\"><input id=\"" + data[i].uuid + "_toggle\" type=\"checkbox\" data-toggle=\"toggle\" data-onstyle=\"success\" value=\"" + data[i].value + "\" data-offstyle=\"danger\"></div>" +
 						"</div>" +
 						"</a>"
 					break;
@@ -121,7 +132,7 @@ function OpenInfoModalWindow_Device_1000(uuid) {
 				}
 			}
 			
-			MkSGetUserBasicSensorsFromCacheByDevice(self.device, function (data) {
+			MkSGetUserBasicSensorsFromCacheByDevice(self.Device, function (data) {
 				for (var index in data) {
 					sensor = data[index];					
 					if (sensor.type == 4) {

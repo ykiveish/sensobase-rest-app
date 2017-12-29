@@ -40,8 +40,12 @@ module.exports = function(app, security, sql, iotClients, iotTable, storage) {
 		security.CheckUUID(req.params.key, function (valid) {
 			if (valid) {
 				var connection = iotClients[iotTable[req.params.uuid]];
-				connection.send("{\"cmd\":\"status\",\"data\":{}");
-				res.json({response:"none"});
+				if (connection == undefined) {
+					res.json({error:"Device not connected", "errno":10});
+				} else {
+					connection.send("{\"cmd\":\"status\",\"data\":{}");
+					res.json({response:"none"});
+				}
 			} else {
 				res.json({error:"security issue"});
 			}
@@ -53,9 +57,13 @@ module.exports = function(app, security, sql, iotClients, iotTable, storage) {
 		
 		security.CheckUUID(req.params.key, function (valid) {
 			if (valid) {
-				var connection = iotClients[iotTable[req.params.uuid]];
-				connection.send("{\"cmd\":\"direct\",\"data\":{" + req.params.data + "}}");
-				res.json({response:"none"});
+				if (connection == undefined) {
+					res.json({error:"Device not connected", "errno":10});
+				} else {
+					var connection = iotClients[iotTable[req.params.uuid]];
+					connection.send("{\"cmd\":\"direct\",\"data\":{" + req.params.data + "}}");
+					res.json({response:"none"});
+				}
 			} else {
 				res.json({error:"security issue"});
 			}

@@ -21,7 +21,7 @@ function LoadDeviceJavascript (name, callback) {
 function DeviceSwitch (device, callback) {
 	self = this;
 	self.Device = device;
-	self.DeviceFileName = device.type + "-device"
+	self.DeviceFileName = device.type + "-device";
 	
 	LoadDeviceHtml(self.DeviceFileName + "/" + self.DeviceFileName, function(data) {
 		htmlData = data;

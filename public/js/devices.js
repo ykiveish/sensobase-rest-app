@@ -16,6 +16,7 @@ function GetDevices() {
 				objStorage.Devices[element.uuid] = element;
 				DeviceSwitch(element, function (data) {
 					document.getElementById('device_context').innerHTML += data;
+					window['OnDeviceLoaded_' + element.type](element.uuid);
 				});
 			});
 	    }
