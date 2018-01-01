@@ -21,45 +21,45 @@ function DeviceStatus(uuid) {
 	});
 }
 
-function OnDeviceLoaded_1000(uuid) {
-	console.log("OnDeviceLoaded_1000");
-	DeviceStatus(uuid);
-}
-
 function GetSensorsData_Handler(data) {
 	MkSAddDeviceListener(data.device.uuid, GetSensorsData_Handler);
-	for (var index in data.sensors) {
-		sensor = data.sensors[index];
-		
-		if (sensor.type == 4) {
-			if (document.getElementById(sensor.uuid + '_toggle') == undefined) {
-				MkSRemoveDeviceListener(data.device.uuid, GetSensorsData_Handler);
-				return;
-			}
+
+	console.log(data);
+	if (data.device.cmd == "sesnsor_update") {
+		for (var index in data.sensors) {
+			sensor = data.sensors[index];
 			
-			$("#" + sensor.uuid + '_toggle').bootstrapToggle('destroy');
-			if (1 == sensor.value) {
-				$("#" + sensor.uuid + '_toggle').bootstrapToggle('on');
-				document.getElementById(sensor.uuid + '_toggle').value = 1;
+			if (sensor.type == 4) {
+				if (document.getElementById(sensor.uuid + '_toggle') == undefined) {
+					MkSRemoveDeviceListener(data.device.uuid, GetSensorsData_Handler);
+					return;
+				}
+				
+				$("#" + sensor.uuid + '_toggle').bootstrapToggle('destroy');
+				if (1 == sensor.value) {
+					$("#" + sensor.uuid + '_toggle').bootstrapToggle('on');
+					document.getElementById(sensor.uuid + '_toggle').value = 1;
+				} else {
+					$("#" + sensor.uuid + '_toggle').bootstrapToggle('off');
+					document.getElementById(sensor.uuid + '_toggle').value = 0;
+				}
 			} else {
-				$("#" + sensor.uuid + '_toggle').bootstrapToggle('off');
-				document.getElementById(sensor.uuid + '_toggle').value = 0;
+				if (document.getElementById(sensor.uuid) == undefined) {
+					MkSRemoveDeviceListener(data.device.uuid, GetSensorsData_Handler);
+					return;
+				}
+			
+				document.getElementById(sensor.uuid).innerHTML = sensor.value;
 			}
-		} else {
-			if (document.getElementById(sensor.uuid) == undefined) {
-				MkSRemoveDeviceListener(data.device.uuid, GetSensorsData_Handler);
-				return;
-			}
-		
-			document.getElementById(sensor.uuid).innerHTML = sensor.value;
 		}
+	}
+	else if (data.device.cmd == "get_update_period") {
+		console.log(data.payload);
 	}
 }
 
 function OpenInfoModalWindow_Device_1000(uuid) {
 	var self = this;
-	
-	console.log("OpenInfoModalWindow_Device_1000");
 	$('#' + uuid + '-modal').modal('show');
 	
 	MkSRemoveDeviceListener(uuid, GetSensorsData_Handler);
@@ -70,9 +70,15 @@ function OpenInfoModalWindow_Device_1000(uuid) {
 		key: localStorage.getItem("key"),
 		uuid: uuid
 	};
+
+	MkSDeviceSendGetRequest({  	url: GetServerUrl(),
+								key: localStorage.getItem("key"),
+								uuid: uuid,
+								cmd: "get_update_period",
+								payload: { }
+							 }, function (res) { console.log(res); });
 	
 	MkSGetUserBasicSensorsByDevice(self.Device, function (data) {
-		console.log(self.Device.uuid);
 		if (data.length > 0) {
 			html = "<form role=\"form\"><fieldset><div class=\"form-group\">";
 			for (i = 0; i < data.length; i++) {
@@ -163,9 +169,7 @@ function LoadDeviceInfo_Device_1000(uuid) {
 	// Device loding logic should be here.
 }
 
-function UpdateDeviceInfo_Device_1000(uuid) {
-	console.log("UpdateDeviceInfo_Device_1000");
-	
+function UpdateDeviceInfo_Device_1000(uuid) {	
 	var device = {
 		url: GetServerUrl(),
 		key: localStorage.getItem("key"),
@@ -214,4 +218,9 @@ function onMouseOverUpdateLink (obj) {
 
 function onMouseOutUpdateLink (obj) {
 	obj.style.color = "black";
+}
+
+function OnDeviceLoaded_1000(uuid) {
+	console.log("OnDeviceLoaded_1000");
+	DeviceStatus(uuid);
 }

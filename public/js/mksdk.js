@@ -77,6 +77,25 @@ function MkSDeviceStatus(obj, callback) {
 	});
 }
 
+function MkSDeviceSendGetRequest(obj, callback) {
+	request = {
+		request: "direct",
+		data: {
+			key:obj.key,
+			device: {
+				cmd:obj.cmd
+			},
+			payload: obj.payload
+		}
+	};
+	$.ajax({
+	    url: obj.url + 'cmd/device/node/direct/' + obj.key + "/" + obj.uuid + "/" + JSON.stringify(request),
+	    type: "GET",
+	    dataType: "json",
+	    success: callback
+	});
+}
+
 function MkSUpdateSensorValue (obj, callback) {
 	$.ajax({
 	    url: obj.url + 'update/sensor/basic/value/' + obj.key + '/' + obj.deviceUuid + '/' + obj.sensorUuid + '/' + obj.value,

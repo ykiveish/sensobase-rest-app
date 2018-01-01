@@ -3,8 +3,6 @@ const moment = require('moment');
 module.exports = function(app, security, sql, iotClients, iotTable, storage) {
 	
 	app.get('/select/devices/:key', function(req, res) {
-		console.log ("METHOD /select/devices");
-		
 		security.CheckUUID(req.params.key, function (valid) {
 			if (valid) {
 				sql.SelectDevices(function(err, devices) {
@@ -34,17 +32,14 @@ module.exports = function(app, security, sql, iotClients, iotTable, storage) {
 		});
 	});
 	
-	app.get('/get/device/node/status/:key/:uuid', function(req, res) {
-		console.log ("METHOD get/device/node/status/:key/:uuid");
-		
+	app.get('/get/device/node/status/:key/:uuid', function(req, res) {		
 		security.CheckUUID(req.params.key, function (valid) {
 			if (valid) {
 				var connection = iotClients[iotTable[req.params.uuid]];
 				if (connection == undefined) {
 					res.json({error:"Device not connected", "errno":10});
 				} else {
-					connection.send("{\"cmd\":\"status\",\"data\":{}");
-					res.json({response:"none"});
+					res.json({response:"status"});
 				}
 			} else {
 				res.json({error:"security issue"});
@@ -52,17 +47,16 @@ module.exports = function(app, security, sql, iotClients, iotTable, storage) {
 		});
 	});
 	
-	app.get('/get/device/node/direct/:key/:uuid/:data', function(req, res) {
-		console.log ("METHOD get/device/node/direct/:key/:uuid/:data");
-		
+	app.get('/cmd/device/node/direct/:key/:uuid/:request', function(req, res) {		
 		security.CheckUUID(req.params.key, function (valid) {
 			if (valid) {
+				var connection = iotClients[iotTable[req.params.uuid]];
 				if (connection == undefined) {
 					res.json({error:"Device not connected", "errno":10});
 				} else {
-					var connection = iotClients[iotTable[req.params.uuid]];
-					connection.send("{\"cmd\":\"direct\",\"data\":{" + req.params.data + "}}");
-					res.json({response:"none"});
+					console.log(req.params.request);
+					connection.send(req.params.request);
+					res.json({response:"direct"});
 				}
 			} else {
 				res.json({error:"security issue"});
@@ -70,9 +64,7 @@ module.exports = function(app, security, sql, iotClients, iotTable, storage) {
 		});
 	});
 	
-	app.get('/select/device/:key/:uuid', function(req, res) {
-		console.log ("METHOD /select/device");
-		
+	app.get('/select/device/:key/:uuid', function(req, res) {		
 		var reqDevice = {
 			uuid: req.params.uuid
 		};
@@ -101,8 +93,6 @@ module.exports = function(app, security, sql, iotClients, iotTable, storage) {
 	});
 	
 	app.get('/insert/device/:key/:type/:uuid/:ostype/:osversion/:brandname', function(req, res) {
-		console.log ("METHOD /insert/device");
-		
 		var reqDevice = {
 			uuid: req.params.uuid,
 			brandName: req.params.brandname
@@ -138,8 +128,6 @@ module.exports = function(app, security, sql, iotClients, iotTable, storage) {
 	});
 	
 	app.get('/update/device/:key/:uuid/:name/:description/:enabled', function(req, res) {
-		console.log ("METHOD /update/device");
-		
 		var reqDevice = {
 			uuid: req.params.uuid,
 			name: req.params.name,
@@ -164,8 +152,6 @@ module.exports = function(app, security, sql, iotClients, iotTable, storage) {
 	});
 
 	app.get('/delete/devices/:key', function(req, res) {
-		console.log ("METHOD /delete/devices");
-		
 		security.CheckAdmin(req.params.key, function(valid) {
 			if (valid) {
 				sql.DeleteDevices(function(err){

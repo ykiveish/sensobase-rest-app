@@ -3,8 +3,6 @@ const moment = require('moment');
 module.exports = function(app, security, sql, iotClients, iotTable, storage) {
 	
     app.get('/delete/sensor/basic/:key', function(req, res) {
-		console.log ("METHOD /select/sensor/basic ALL");
-
 		// Checking user key for validity.
 		security.CheckUUID(req.params.key, function (valid) {
 			if (valid) {
@@ -22,7 +20,6 @@ module.exports = function(app, security, sql, iotClients, iotTable, storage) {
 	});
 	
 	app.get('/get/sensor/basic/:key/:deviceuuid', function(req, res) {
-		console.log ("METHOD /get/sensor/basic");
 		security.CheckUUID(req.params.key, function (valid) {
 			if (valid) {
 				res.end(JSON.stringify(storage.SensorListDictWebSocket[req.params.deviceuuid]));
@@ -33,8 +30,6 @@ module.exports = function(app, security, sql, iotClients, iotTable, storage) {
 	});
 	
 	app.get('/select/sensor/basic/:key', function(req, res) {
-		console.log ("METHOD /select/sensor/basic ALL");
-
 		// Checking user key for validity.
 		security.CheckUUID(req.params.key, function (valid) {
 			if (valid) {
@@ -52,8 +47,6 @@ module.exports = function(app, security, sql, iotClients, iotTable, storage) {
 	});
 	
 	app.get('/select/sensor/basic/:key/:deviceuuid', function(req, res) {
-		console.log ("METHOD /select/sensor/basic ByDevice");
-
 		// Checking user key for validity.
 		security.CheckUUID(req.params.key, function (valid) {
 			if (valid) {
@@ -67,7 +60,6 @@ module.exports = function(app, security, sql, iotClients, iotTable, storage) {
 	});
 
 	app.get('/insert/sensor/basic/:key/:deviceuuid/:uuid/:type/:value', function(req, res) {
-		console.log ("METHOD /insert/sensor/basic " + req.params.uuid);
 		var reqDevice = {
 			uuid: req.params.deviceuuid
 		};
@@ -117,8 +109,6 @@ module.exports = function(app, security, sql, iotClients, iotTable, storage) {
 	});
 	
 	app.get('/update/sensor/basic/value/:key/:deviceuuid/:uuid/:value', function(req, res) {
-		console.log ("METHOD /update/sensor/basic/value");
-		
 		// Checking user key for validity.
 		security.CheckUUID(req.params.key, function (valid) {
 			if (valid) {
@@ -131,7 +121,7 @@ module.exports = function(app, security, sql, iotClients, iotTable, storage) {
 							// Update value of the sensor.
 							sql.UpdateBasicSensorValue(req.params.uuid, req.params.value, function (err) {
 								var connection = iotClients[iotTable[req.params.deviceuuid]];
-								connection.send("{\"cmd\":\"set_sensor\",\"data\":{\"uuid\":\"" + req.params.uuid + "\",\"value\":" + req.params.value + "}}");
+								connection.send("{\"request\":\"set_sensor\",\"data\":{\"uuid\":\"" + req.params.uuid + "\",\"value\":" + req.params.value + "}}");
 								res.json(err);
 							});
 						}

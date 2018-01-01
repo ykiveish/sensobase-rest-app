@@ -25,12 +25,12 @@ var Base 	= 19;  // 32416187567
 var DiffieHellmanDict = {};
 
 
-var IOTClients = [];
-var IOTClientsTable = {};
-var WebSSEClients = {};
-
-var SensorListDictSSE = {};
-var DeviceListDictSSE = {};
+var IOTClients 			= [];
+var IOTClientsTable 	= {};
+var WebSSEClients 		= [];
+var WebSSEClientsTable  = {}
+var SensorListDictSSE 	= {};
+var DeviceListDictSSE 	= {};
 
 var UserDevKey = "ac6de837-7863-72a9-c789-a0aae7e9d93e";
 
@@ -44,12 +44,11 @@ wsServer = new WebSocketServer({
 function LocalStorage (sql) {
 	self = this;
 	
-	this.DB = sql;
-	this.UserLoaded = false;
-	
+	this.DB 					 = sql;
+	this.UserLoaded 			 = false;
 	this.SensorListDictWebSocket = {};
 	this.DeviceListDictWebSocket = {};
-	this.UserDictionary = {};
+	this.UserDictionary 		 = {};
 	
 	this.LoadUsers = function () {
 		DB.SelectUsers (function(error, users) {
@@ -99,7 +98,7 @@ function DisconnectedDeviceHandlerFunc() {
 	}
 }
 
-var StatusHandler = setInterval (StatusHandlerFunc, 10000);
+// var StatusHandler = setInterval (StatusHandlerFunc, 10000);
 var DisconnectedDeviceHandler = setInterval (DisconnectedDeviceHandlerFunc, 10000);
 
 // WebSocket server
@@ -132,17 +131,19 @@ wsServer.on('request', function(request) {
 			
 			// Saving device in server local database for monitoring.
 			jsonData.data.device.timestamp = moment().unix();
-			if (jsonData.cmd == "direct") {
+			if (jsonData.response == "direct") {
 			} else {
 				Local.DeviceListDictWebSocket[jsonData.data.device.uuid] = jsonData.data.device;
 				Local.SensorListDictWebSocket[jsonData.data.device.uuid] = jsonData.data.sensors;
 				// TODO - Save to SQLite database.
-			
-				// Sending data to application. No check needed application will use data it needs. (user key was verified)
-				WebConnection = WebSSEClients[jsonData.data.key];
-				if (WebConnection != undefined) {
-					// console.log ((new Date()) + " #> Sending data to web client ... \n" + JSON.stringify(jsonData.data));
-					WebConnection.session.write("data: " + JSON.stringify(jsonData.data) + "\n\n");
+			}
+
+			// Sending data to application. No check needed application will use data it needs. (user key was verified)
+			WebConnections = WebSSEClientsTable[jsonData.data.key];
+			if (WebConnections != undefined) {
+				// console.log ((new Date()) + " #> Sending data to web client ... \n" + JSON.stringify(jsonData.data));
+				for (var index in WebConnections) {
+					WebConnections[index].session.write("data: " + JSON.stringify(jsonData.data) + "\n\n");
 				}
 			}
 	} else if (message.type === 'binary') {
@@ -191,13 +192,16 @@ app.get('/register_devices_update_event/:key', function(req, res) {
     res.write('\n');
 
     console.log ((new Date()) + " #> Register to sensor stream ... " + req.params.key);
-	WebSSEClients[req.params.key] = {
-										addr: req.params.key, 
-										session: res
-                            		};
+
+    WebSSEClients.push(	{
+							addr: req.params.key, 
+							session: res
+						});
+	WebSSEClientsTable[req.params.key] = WebSSEClients;
+
 	req.on("close", function() {
 		console.log ((new Date()) + " #> UnRegister to sensor stream ... " + req.params.key);
-		delete WebSSEClients[req.params.key]
+		delete WebSSEClientsTable[req.params.key]
 	});
 });
 
@@ -424,7 +428,6 @@ app.get('/select/user/:key/:id', function(req, res) {
  * Login check to MakeSense, return json object of an user.
  */
 app.get('/login/:name/:password', function(req, res) {
-	console.log ("METHOD /login");
 	GetUserByNamePassword (req.params.name, req.params.password, function (user) {
 		if (user != null) {
 			logedInUsers.push(user);
@@ -439,7 +442,6 @@ app.get('/login/:name/:password', function(req, res) {
  * Same as Login but without saving user.
  */
 app.get('/fastlogin/:name/:password', function(req, res) {
-	console.log ("METHOD /login");
 	GetUserByNamePassword (req.params.name, req.params.password, function (user) {
 		if (user != null) {
 			res.json(user);
@@ -453,7 +455,6 @@ app.get('/fastlogin/:name/:password', function(req, res) {
  * Login non-os check to MakeSense, return UUID of an user. (only for non-os devices)
  */
 app.get('/login/nonos/:name/:password', function(req, res) {
-	console.log ("METHOD /login/nonos");
 	GetUserByNamePassword (req.params.name, req.params.password, function (user) {
 		if (user != null) {
 			logedInUsers.push(user);
@@ -465,7 +466,6 @@ app.get('/login/nonos/:name/:password', function(req, res) {
 });
 
 app.get('/nonos/select/device/:key/:uuid', function(req, res) {
-	console.log ("METHOD /nonos/select/device " + req.params.uuid);
 	var reqDevice = {
 		uuid: req.params.uuid
 	};
@@ -494,7 +494,6 @@ app.get('/nonos/select/device/:key/:uuid', function(req, res) {
 });
 
 app.get('/nonos/insert/device/:key/:type/:uuid/:ostype/:osversion', function(req, res) {
-	console.log ("METHOD /nonos/insert/devices");
 	var reqDevice = {
 		uuid: req.params.uuid
 	};
