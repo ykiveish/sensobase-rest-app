@@ -66,7 +66,7 @@ class Network ():
 		return False
 
 	def WSConnection_OnMessage_Handler (self, ws, message):
-		print message
+		print "WSConnection_OnMessage_Handler"
 		data = json.loads(message)
 		self.OnDataArrivedCallback(data)
 
@@ -120,7 +120,7 @@ class Network ():
 		self.WSConnection.send(payload)
 
 	def BuildJSONFromBasicSensorListToHost (self, sensors):
-		payload = "{\"cmd\":\"sensors_publish\",\"data\":{\"key\":\"" + str(self.UserDevKey) + "\",\"device\":{\"uuid\":\"" + str(self.DeviceUUID) + "\",\"type\":" + str(self.Type) + "},\"sensors\":["
+		payload = "{\"response\":\"sensors_publish\",\"data\":{\"key\":\"" + str(self.UserDevKey) + "\",\"device\":{\"uuid\":\"" + str(self.DeviceUUID) + "\",\"type\":" + str(self.Type) + ",\"cmd\":\"sesnsor_update\"},\"sensors\":["
 		for item in sensors:
 			payload += "{\"uuid\":\"" + str(item.UUID) + "\",\"type\":" + str(item.Type) + ",\"value\":" + str(item.Value) + ", \"update_ts\":5},"
 		payload = payload[:-1]
@@ -141,12 +141,26 @@ class Network ():
 	def GetValueFromJson(self, json):
 		return json['value']
 	
+	def GetRequestFromJson(self, json):
+		return json['request']
+
 	def GetCommandFromJson(self, json):
-		return json['cmd']
+		return json['data']['device']['cmd']
+
+	def GetPayloadFromJson(self, json):
+		return json['data']['payload']
 
 	def GetDataFromJson(self, json):
 		return json['data']
+	
+	def Response(self, payload):
+		try:
+			self.SendWebSocket(payload)
+		except:
+			return False
 		
+		return True
+
 	def UpdateSensorsWS(self, sensors):
 		if (len(sensors) > 0):
 			payload = self.BuildJSONFromBasicSensorListToHost(sensors)
@@ -155,4 +169,4 @@ class Network ():
 			except:
 				return False
 		
-		return True		
+		return True

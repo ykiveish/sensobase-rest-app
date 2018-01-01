@@ -58,19 +58,18 @@ class MkSThisMachine ():
 		self.Network.UpdateSensorsWS(self.Sensors)
 
 	def WebSocketDataArrivedCallback (self, json):
-		print "WebSocketDataArrivedCallback"
-		command = self.Network.GetCommandFromJson(json)
-		if (command == "set_sensor"):
+		request = self.Network.GetRequestFromJson(json)
+		if request == "set_sensor":
 			data = self.Network.GetDataFromJson(json)
 			ret = self.UpdateSensor(data)
 			if ret == True:
 				self.Network.UpdateSensorsWS(self.Sensors)
-		elif (command == "status"):
-			print "Return STATUS"
-		elif (command == "direct"):
-			print "Return DIRECT"
+		elif request == "direct":
+			reqPayload = self.Network.GetPayloadFromJson(json)
+			reqCommand = self.Network.GetCommandFromJson(json)
+			self.DirectRequestHandler(reqCommand, reqPayload)
 		else:
-			print "Error: Not support " + command + " command."
+			print "Error: Not support " + request + " request type."
 
 	def WebSocketConnectionClosedCallback (self):
 		print "WebSocketConnectionClosedCallback"
@@ -90,6 +89,13 @@ class MkSThisMachine ():
 				return True
 	
 		return False
+
+	def DirectRequestHandler (self, command, payload):
+		if command == "get_update_period":
+			resPayload = "{\"response\":\"direct\",\"data\":{\"key\":\"" + str(self.Network.UserDevKey) + "\",\"device\":{\"uuid\":\"" + str(self.UUID) + "\",\"type\":" + str(self.Type) + ",\"cmd\":\"get_update_period\"},\"payload\":{\"interval\":" + str(self.Delay) + "}}}"
+			self.Network.Response(resPayload)
+		else:
+			print "Error: Not support " + command + " command."
 
 	def IdleState (self):
 		print "IdleState"
@@ -176,10 +182,10 @@ class MkSThisMachine ():
 			time.sleep(5)
 
 		self.Connector.DisconnectDevice()
+		sys.exit(1);
 	
 	def Exit (self):
-		self.IsRunnig = False
-		sys.exit(1);
+		self.IsRunnig = False		
 
 machine = MkSThisMachine()
 def signal_handler(signal, frame):

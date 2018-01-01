@@ -54,6 +54,7 @@ class Adaptor ():
 		while self.ExitRecievePacketsWorker == False:
 			time.sleep(0.1)
 		self.SerialAdapter.close()
+		print "Serial connection to " + self.DeviceConnectedName + " was closed ..."
 
 	def Send (self, data):
 		self.DataArrived = False
