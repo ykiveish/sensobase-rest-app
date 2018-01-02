@@ -23,8 +23,6 @@ function DeviceStatus(uuid) {
 
 function GetSensorsData_Handler(data) {
 	MkSAddDeviceListener(data.device.uuid, GetSensorsData_Handler);
-
-	console.log(data);
 	if (data.device.cmd == "sesnsor_update") {
 		for (var index in data.sensors) {
 			sensor = data.sensors[index];
@@ -54,7 +52,7 @@ function GetSensorsData_Handler(data) {
 		}
 	}
 	else if (data.device.cmd == "get_update_period") {
-		console.log(data.payload);
+		document.getElementById(data.device.uuid + "-device-update_delay").value = data.payload.interval;
 	}
 }
 
@@ -74,9 +72,9 @@ function OpenInfoModalWindow_Device_1000(uuid) {
 	MkSDeviceSendGetRequest({  	url: GetServerUrl(),
 								key: localStorage.getItem("key"),
 								uuid: uuid,
-								cmd: "get_update_period",
+								cmd: "get_device_config",
 								payload: { }
-							 }, function (res) { console.log(res); });
+							 }, function (res) { });
 	
 	MkSGetUserBasicSensorsByDevice(self.Device, function (data) {
 		if (data.length > 0) {
@@ -181,7 +179,19 @@ function UpdateDeviceInfo_Device_1000(uuid) {
 	
 	MkSUpdateDeviceOnServer(device, function (data) {
 		if (data.error == "OK") {
-			$('#generic-modal-update-sucess').modal('show');
+			MkSDeviceSendGetRequest({  	url: GetServerUrl(),
+								key: localStorage.getItem("key"),
+								uuid: uuid,
+								cmd: "set_device_config",
+								payload: {
+									interval: document.getElementById(uuid + "-device-update_delay").value,
+									update_on_change: "False"
+								}
+							 }, function (res) {
+							 	$('#generic-modal-update-sucess').modal('show');
+							 	$('#' + uuid + '-modal').modal('hide');
+								ResetPage();
+							 });
 		} else {
 			$('#generic-modal-update-failed').modal('show');
 		}
@@ -221,6 +231,5 @@ function onMouseOutUpdateLink (obj) {
 }
 
 function OnDeviceLoaded_1000(uuid) {
-	console.log("OnDeviceLoaded_1000");
 	DeviceStatus(uuid);
 }

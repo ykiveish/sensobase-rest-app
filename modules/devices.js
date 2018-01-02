@@ -54,7 +54,6 @@ module.exports = function(app, security, sql, iotClients, iotTable, storage) {
 				if (connection == undefined) {
 					res.json({error:"Device not connected", "errno":10});
 				} else {
-					console.log(req.params.request);
 					connection.send(req.params.request);
 					res.json({response:"direct"});
 				}
