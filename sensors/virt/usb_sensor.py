@@ -16,24 +16,26 @@ from mksdk import MkSFile
 
 class MkSThisMachine ():
 	def __init__ (self):
-		self.ApiUrl 	= ""
-		self.WsUrl		= ""
-		self.UserName 	= ""
-		self.Password 	= ""
-		self.Sensors 	= []
-		self.Protocol	= MkSProtocol.Protocol()
-		self.Connector 	= MkSUSBAdaptor.Adaptor()
-		self.Device 	= MkSArduinoSensor.ArduinoSensor(self.Connector, self.Protocol)
-		self.Network	= MkSNetMachine.Network(self.ApiUrl, self.WsUrl)
-		self.File 		= MkSFile.File()
-		self.Type 		= 1000
-		self.UUID 		= "ac6de837-7863-72a9-c789-b0aae7e9d93e"
-		self.OSType 	= "Linux"
-		self.OSVersion 	= "Unknown"
-		self.BrandName 	= "MakeSense-Virtual"
-		self.State 		= 'IDLE'
-		self.Delay 		= 1;
-		self.IsRunnig 	= True;
+		self.ApiUrl 		= ""
+		self.WsUrl			= ""
+		self.UserName 		= ""
+		self.Password 		= ""
+		self.Sensors 		= []
+		self.Protocol		= MkSProtocol.Protocol()
+		self.Connector 		= MkSUSBAdaptor.Adaptor()
+		self.Device 		= MkSArduinoSensor.ArduinoSensor(self.Connector, self.Protocol)
+		self.Network		= MkSNetMachine.Network(self.ApiUrl, self.WsUrl)
+		self.File 			= MkSFile.File()
+		self.Type 			= 1000
+		self.UUID 			= "ac6de837-7863-72a9-c789-b0aae7e9d93e"
+		self.OSType 		= "Linux"
+		self.OSVersion 		= "Unknown"
+		self.BrandName 		= "MakeSense-Virtual"
+		self.State 			= 'IDLE'
+		self.Delay 			= 1
+		self.UpdateInterval	= 10
+		self.UpdateOnChange = False
+		self.IsRunnig 		= True;
 
 		self.States = {
 			'IDLE': 	self.IdleState,
@@ -89,10 +91,19 @@ class MkSThisMachine ():
 				return True
 	
 		return False
+	
+	def SetUpdateInterval (self):
+		self.Delay = self.UpdateInterval
 
 	def DirectRequestHandler (self, command, payload):
-		if command == "get_update_period":
-			resPayload = "{\"response\":\"direct\",\"data\":{\"key\":\"" + str(self.Network.UserDevKey) + "\",\"device\":{\"uuid\":\"" + str(self.UUID) + "\",\"type\":" + str(self.Type) + ",\"cmd\":\"get_update_period\"},\"payload\":{\"interval\":" + str(self.Delay) + "}}}"
+		if command == "get_device_config":
+			resPayload = "{\"response\":\"direct\",\"data\":{\"key\":\"" + str(self.Network.UserDevKey) + "\",\"device\":{\"uuid\":\"" + str(self.UUID) + "\",\"type\":" + str(self.Type) + ",\"cmd\":\"get_update_period\"},\"payload\":{\"interval\":" + str(self.UpdateInterval) + ",\"update_on_change\":\"" + str(self.UpdateOnChange) + "\"}}}"
+			self.Network.Response(resPayload)
+		elif command == "set_device_config":
+			self.UpdateInterval = int(payload['interval'])
+			self.SetUpdateInterval()
+			self.UpdateOnChange = payload['update_on_change']
+			resPayload = "{\"response\":\"direct\",\"data\":{\"key\":\"" + str(self.Network.UserDevKey) + "\",\"device\":{\"uuid\":\"" + str(self.UUID) + "\",\"type\":" + str(self.Type) + ",\"cmd\":\"get_update_period\"},\"payload\":{\"interval\":" + str(self.UpdateInterval) + ",\"update_on_change\":\"" + str(self.UpdateOnChange) + "\"}}}"
 			self.Network.Response(resPayload)
 		else:
 			print "Error: Not support " + command + " command."
@@ -148,6 +159,8 @@ class MkSThisMachine ():
 			if error == False:
 				return
 		self.State = 'UPDATE'
+		self.Delay = self.UpdateInterval
+		self.Network.UpdateSensorsWS(self.Sensors)
 
 	def UpdateSensorState (self):
 		print "UpdateSensorState"
@@ -161,8 +174,6 @@ class MkSThisMachine ():
 		# If device failed to update WS we need to try access server again
 		if ret == False:
 			self.State = "ACCESS"
-			
-		self.Delay = 10
 		
 	def MachineStateWorker (self):
 		while self.IsRunnig:
