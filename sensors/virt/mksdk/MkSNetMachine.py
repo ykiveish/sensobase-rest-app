@@ -122,15 +122,19 @@ class Network ():
 	def BuildJSONFromBasicSensorListToHost (self, sensors):
 		payload = "{\"response\":\"sensors_publish\",\"data\":{\"key\":\"" + str(self.UserDevKey) + "\",\"device\":{\"uuid\":\"" + str(self.DeviceUUID) + "\",\"type\":" + str(self.Type) + ",\"cmd\":\"sesnsor_update\"},\"sensors\":["
 		for item in sensors:
-			payload += "{\"uuid\":\"" + str(item.UUID) + "\",\"type\":" + str(item.Type) + ",\"value\":" + str(item.Value) + ", \"update_ts\":5},"
+			payload += "{\"uuid\":\"" + str(item.UUID) + "\",\"type\":" + str(item.Type) + ",\"value\":" + str(item.Value) + "},"
 		payload = payload[:-1]
 		payload += "]}}"
 		return payload
+
+	def BuildDirectResponse (self, command, payload):
+		response = "{\"response\":\"direct\",\"data\":{\"key\":\"" + str(self.UserDevKey) + "\",\"device\":{\"uuid\":\"" + str(self.DeviceUUID) + "\",\"type\":" + str(self.Type) + ",\"cmd\":\"get_device_sensors\"},\"payload\":{" + payload + "}}}"
+		return response
 	
 	def BuildJSONFromBasicSensorList (self, sensors):
 		payload = "{\"key\":\"" + str(self.UserDevKey) + "\",\"device\":{\"uuid\":\"" + str(self.DeviceUUID) + "\",\"type\":" + str(self.Type) + "},\"sensors\":["
 		for item in sensors:
-			payload += "{\"uuid\":\"" + str(item.UUID) + "\",\"type\":" + str(item.Type) + ",\"value\":" + str(item.Value) + ", \"update_ts\":5},"
+			payload += "{\"uuid\":\"" + str(item.UUID) + "\",\"type\":" + str(item.Type) + ",\"value\":" + str(item.Value) + "},"
 		payload = payload[:-1]
 		payload += "]}"
 		return payload

@@ -1,11 +1,11 @@
 #!/usr/bin/python
 
 class Sensor:
+	Name  = ""
 	ID	  = 0
 	UUID  = 0
 	Type  = 0
 	Value = 0
-	UpdateInterval = 5
 	
 	def __init__(self, id, type, local_id):
 		self.ID   = local_id

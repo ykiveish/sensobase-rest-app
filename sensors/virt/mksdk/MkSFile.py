@@ -10,6 +10,11 @@ class File ():
 		file = open(filename, "w")
 		file.write(data)
 		file.close()
+
+	def AppendToFile (self, filename, data):
+		file = open(filename, "a")
+		file.write(data)
+		file.close()
 	
 	def LoadStateFromFile (self, filename):
 		if os.path.isfile(filename) == True:

@@ -1,0 +1,54 @@
+Request
+=======
+{
+	request:"direct",
+	data: {
+		key:"ac6de837-7863-72a9-c789-a0aae7e9d93e",
+		device: {
+			cmd:"<COMMAND_NAME>"
+		},
+		payload: {
+			<NODE_PRIVATE_DATA>
+		}
+	}
+}
+
+Response
+========
+{
+	response:"direct",
+	data: {
+		key:"ac6de837-7863-72a9-c789-a0aae7e9d93e",
+		device: {
+			uuid:"ac6de837-7863-72a9-c789-b0aae7e9d93e",
+			type:1000,
+			cmd:"<COMMAND_NAME>"
+		},
+		payload: {
+			<NODE_PRIVATE_DATA>
+		}
+	}
+}
+
+{
+	database_name:"",
+	data:{
+		sensors:[
+			{
+				uuid:"<SENSOR_UUID>",
+				values:[
+					{
+						value:<SAMPLE>,
+						timestamp:<TIME>
+					},
+					.
+					.
+					.
+				]
+			},
+			.
+			.
+			.
+		]
+	}
+}
