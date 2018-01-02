@@ -1,16 +1,28 @@
-<div class="col-lg-3 col-md-6">
+<div>
 	<div class="panel panel-primary">
-		<div class="panel-heading">
-			<div class="row">
-				<div class="col-xs-3">
-					<img width="70px" src="[DEVICE_ICON]"/>
-				</div>
-				<div class="col-xs-9 text-right">
-					<div class="midium">[DEVICE_NAME]</div>
-					<div>[DEVICE_DESCRIPTION]</div>
-				</div>
-			</div>
-		</div>
+		<div class="panel-body">
+            <ul class="chat">
+                <li class="left clearfix">
+                    <span class="chat-img pull-left">
+                        <img width="50px" src="[DEVICE_ICON]" alt="User Avatar" class="img-circle" />
+                    </span>
+                    <div class="chat-body clearfix">
+                        <div class="header">
+                            <strong class="primary-font">[DEVICE_NAME]</strong>
+                            <small class="pull-right text-muted">
+                                <i class="fa fa-clock-o fa-fw"></i> 12 mins ago
+                            </small>
+                        </div>
+                        <p>
+                            [DEVICE_DESCRIPTION]
+                        </p>
+                        <div class="text-right">
+							<a href="#" onClick="OpenInfoModalWindow_Device_1000('[DEVICE_UUID]');">View<a/>
+						</div>
+                    </div>
+                </li>
+            </ul>
+        </div>
 		<div class="panel-footer">
 			<a href="#"><span class="pull-left" onClick="onAndroidDetailsClick()">View Details</span><a/>
 			<div class="pull-right" id="sensor-context-[DEVICE_UUID]"></div>

@@ -91,7 +91,7 @@ function StatusHandlerFunc() {
 function DisconnectedDeviceHandlerFunc() {
 	if (Local.DeviceListDictWebSocket !== undefined) {
 		for (var index in Local.DeviceListDictWebSocket) {
-			if (moment().unix() - Local.DeviceListDictWebSocket[index].timestamp > 10) {
+			if (moment().unix() - Local.DeviceListDictWebSocket[index].timestamp > 4) {
 				delete Local.DeviceListDictWebSocket[Local.DeviceListDictWebSocket[index].uuid];
 			}
 		}
@@ -99,7 +99,7 @@ function DisconnectedDeviceHandlerFunc() {
 }
 
 // var StatusHandler = setInterval (StatusHandlerFunc, 10000);
-var DisconnectedDeviceHandler = setInterval (DisconnectedDeviceHandlerFunc, 10000);
+var DisconnectedDeviceHandler = setInterval (DisconnectedDeviceHandlerFunc, 5000);
 
 // WebSocket server
 wsServer.on('request', function(request) {
@@ -146,7 +146,7 @@ wsServer.on('request', function(request) {
 					WebConnections[index].session.write("data: " + JSON.stringify(jsonData.data) + "\n\n");
 				}
 			}
-	} else if (message.type === 'binary') {
+		} else if (message.type === 'binary') {
 			console.log((new Date()) + 'Received Binary Message of ' + message.binaryData.length + ' bytes');
 			connection.sendBytes(message.binaryData);
 		}
