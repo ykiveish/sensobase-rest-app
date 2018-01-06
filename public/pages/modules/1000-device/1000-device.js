@@ -28,61 +28,69 @@ function GetSensorsData_Handler(data) {
 		document.getElementById(data.device.uuid + "-device-update_delay").value 		= data.payload.interval;
 		document.getElementById(data.device.uuid + "-device-on_change_update").checked 	= ConvertBoleanToJavascript(data.payload.update_on_change);
 		document.getElementById(data.device.uuid + "-device-history_log").checked 		= ConvertBoleanToJavascript(data.payload.update_local_db);
+		
+		if (ConvertBoleanToJavascript(data.payload.update_on_change) == true) {
+			$("#" + data.device.uuid + "-device-update_delay").prop('disabled', true);
+		} else {
+			$("#" + data.device.uuid + "-device-update_delay").prop('disabled', false);
+		}
 	} else if (data.device.cmd == "set_device_config") {
 		document.getElementById(data.device.uuid + "-device-update_delay").value 		= data.payload.interval;
 		document.getElementById(data.device.uuid + "-device-on_change_update").checked 	= ConvertBoleanToJavascript(data.payload.update_on_change);
 		document.getElementById(data.device.uuid + "-device-history_log").checked 		= ConvertBoleanToJavascript(data.payload.update_local_db);
+		
+		if (ConvertBoleanToJavascript(data.payload.update_on_change) == true) {
+			$("#" + data.device.uuid + "-device-update_delay").prop('disabled', true);
+		} else {
+			$("#" + data.device.uuid + "-device-update_delay").prop('disabled', false);
+		}
 	} else if (data.device.cmd == "get_device_sensors") {
 		if (data.payload.sensors.length > 0) {
 			if (document.getElementById(data.device.uuid + '-modal-sensors').innerHTML == "") {
-				html = "<form role=\"form\"><fieldset><div class=\"form-group\">";
+				html = "<div class=\"table-responsive\">" +
+				"<table class=\"table table-hover\"><thead><tr><th>#</th><th>Type</th><th>Name</th><th><div style=\"text-align:center\">Value/Action</div></th><th><div style=\"text-align:center\">Favorite</div></th></tr></thead><tbody>";
 				for (i = 0; i < data.payload.sensors.length; i++) {
 					var sensor = data.payload.sensors[i];
 					switch(sensor.type) {
 						case 1:
-							html += "<a href=\"#\" class=\"list-group-item\">" +
-							"<div class=\"row\">" +
-							"<div class=\"col-xs-1\"><img width=\"30px\" src=\"../images/basic_sensors/temperature_good.png\"/></div>" +
-							"<div class=\"col-xs-6\"><input class=\"form-control\" id=\"" + sensor.uuid + "-name\" value=\"" + sensor.name + "\"></div>" +
-							"<div class=\"col-xs-3\"><label style=\"cursor: pointer\" onclick=\"\" onmouseover=\"onMouseOverUpdateLink(this);\" onmouseout=\"onMouseOutUpdateLink(this);\">Update</label></div>" +
-							"<div class=\"col-xs-2\"><span class=\"pull-right text-muted\" style=\"font-size:large\"><em id=\"" + sensor.uuid + "\">" + sensor.value + "</em> C</span></div>" +
-							"</div>" +
-							"</a>"
+							html += "<tr>" +
+							"<td>" + (i + 1) + "</td>" +
+							"<td><img width=\"25px\" src=\"../images/basic_sensors/temperature_good.png\"/></td>" +
+							"<td><label id=\"" + sensor.uuid + "-name\">" + sensor.name + "</label></td>" +
+							"<td align=\"center\"><span class=\"text-muted\" style=\"font-size:large\"><em id=\"" + sensor.uuid + "\">" + sensor.value + "</em> C</span></td>" +
+							"<td align=\"center\"><span class=\"text-muted\" style=\"font-size:small\">No</span></td>" +
+							"</tr>";
 						break;
 						case 2:
-							html += "<a href=\"#\" class=\"list-group-item\">" +
-							"<div class=\"row\">" +
-							"<div class=\"col-xs-1\"><img width=\"30px\" src=\"../images/basic_sensors/humidity.png\"/></div>" +
-							"<div class=\"col-xs-6\"><input class=\"form-control\" id=\"" + sensor.uuid + "-name\" value=\"" + sensor.name + "\"></div>" +
-							"<div class=\"col-xs-3\"><label style=\"cursor: pointer\" onclick=\"\" onmouseover=\"onMouseOverUpdateLink(this);\" onmouseout=\"onMouseOutUpdateLink(this);\">Update</label></div>" +
-							"<div class=\"col-xs-2\"><span class=\"pull-right text-muted\" style=\"font-size:large\"><em id=\"" + sensor.uuid + "\">" + sensor.value + "</em> %</span></div>" +
-							"</div>" +
-							"</a>"
+							html += "<tr>" +
+							"<td>" + (i + 1) + "</td>" +
+							"<td><img width=\"25px\" src=\"../images/basic_sensors/humidity.png\"/></td>" +
+							"<td><label id=\"" + sensor.uuid + "-name\">" + sensor.name + "</label></td>" +
+							"<td align=\"center\"><span class=\"text-muted\" style=\"font-size:large\"><em id=\"" + sensor.uuid + "\">" + sensor.value + "</em> %</span></td>" +
+							"<td align=\"center\"><span class=\"text-muted\" style=\"font-size:small\">No</span></td>" +
+							"</tr>";
 						break;
 						case 3:
-							html += "<a href=\"#\" class=\"list-group-item\">" +
-							"<div class=\"row\">" +
-							"<div class=\"col-xs-1\"><img width=\"30px\" src=\"../images/basic_sensors/luminance.png\"/></div>" +
-							"<div class=\"col-xs-6\"><input class=\"form-control\" id=\"" + sensor.uuid + "-name\" value=\"" + sensor.name + "\"></div>" +
-							"<div class=\"col-xs-3\"><label style=\"cursor: pointer\" onclick=\"\" onmouseover=\"onMouseOverUpdateLink(this);\" onmouseout=\"onMouseOutUpdateLink(this);\">Update</label></div>" +
-							"<div class=\"col-xs-2\"><span class=\"pull-right text-muted\" style=\"font-size:x-large\"><em id=\"" + sensor.uuid + "\">" + sensor.value + "</em> %</span></div>" +
-							"</div>" +
-							"</a>"
+							html += "<tr>" +
+							"<td>" + (i + 1) + "</td>" +
+							"<td><img width=\"25px\" src=\"../images/basic_sensors/luminance.png\"/></td>" +
+							"<td><label id=\"" + sensor.uuid + "-name\">" + sensor.name + "</label></td>" +
+							"<td align=\"center\"><span class=\"text-muted\" style=\"font-size:large\"><em id=\"" + sensor.uuid + "\">" + sensor.value + "</em> %</span></td>" +
+							"<td align=\"center\"><span class=\"text-muted\" style=\"font-size:small\">No</span></td>" +
+							"</tr>";
 						break;
 						case 4:
-							html += "<a href=\"#\" class=\"list-group-item\">" +
-							"<div class=\"row\">" +
-							"<div class=\"col-xs-1\"><img width=\"30px\" src=\"../images/basic_sensors/switch.png\"/></div>" +
-							"<div class=\"col-xs-6\"><input class=\"form-control\" id=\"" + sensor.uuid + "-name\" value=\"" + sensor.name + "\"></div>" +
-							"<div class=\"col-xs-3\"><label style=\"cursor: pointer\" onclick=\"\" onmouseover=\"onMouseOverUpdateLink(this);\" onmouseout=\"onMouseOutUpdateLink(this);\">Update</label></div>" +
-							"<div class=\"col-xs-2\" onclick=\"onClickSwitch('" + sensor.uuid + "','" + data.device.uuid + "');\"><input id=\"" + sensor.uuid + "_toggle\" type=\"checkbox\" data-toggle=\"toggle\" data-onstyle=\"success\" value=\"" + sensor.value + "\" data-offstyle=\"danger\"></div>" +
-							"</div>" +
-							"</a>"
-						break;
+							html += "<tr>" +
+							"<td>" + (i + 1) + "</td>" +
+							"<td><img width=\"30px\" src=\"../images/basic_sensors/switch.png\"/></td>" +
+							"<td><label id=\"" + sensor.uuid + "-name\">" + sensor.name + "</label></td>" +
+							"<td align=\"center\"><div onclick=\"onClickSwitch('" + sensor.uuid + "','" + data.device.uuid + "');\"><input id=\"" + sensor.uuid + "_toggle\" type=\"checkbox\" data-toggle=\"toggle\" data-onstyle=\"success\" value=\"" + sensor.value + "\" data-offstyle=\"danger\"></div></td>" +
+							"<td align=\"center\"><span class=\"text-muted\" style=\"font-size:small\">No</span></td>" +
+							"</tr>";
 						default:
 						break;
 					}
-				} html += "</div></fieldset></form>";
+				} html += "</tbody></table></div>";
 				document.getElementById(data.device.uuid + '-modal-sensors').innerHTML = html;
 			}
 			
@@ -158,19 +166,16 @@ function ConvertBoleanToJavascript(bool) {
 	}
 }
 
-function UpdateDeviceInfo_Device_1000(uuid) {	
-	var device = {
-		url: GetServerUrl(),
-		key: localStorage.getItem("key"),
-		uuid: uuid,
-		name: document.getElementById(uuid + '-device-name').value,
-		description: document.getElementById(uuid + '-device-description').value,
-		enable: 1
-	};
+function UpdateUpdateIntervalTextbox (uuid) {
+	if (document.getElementById(uuid + "-device-on_change_update").checked == true) {
+		$("#" + uuid + "-device-update_delay").prop('disabled', true);
+	} else {
+		$("#" + uuid + "-device-update_delay").prop('disabled', false);
+	}
+}
 
-	MkSUpdateDeviceOnServer(device, function (data) {
-		if (data.error == "OK") {
-			MkSDeviceSendGetRequest({  	url: GetServerUrl(),
+function UpdateDeviceInfo_Device_1000(uuid) {
+	MkSDeviceSendGetRequest({  	url: GetServerUrl(),
 								key: localStorage.getItem("key"),
 								uuid: uuid,
 								cmd: "set_device_config",
@@ -184,13 +189,6 @@ function UpdateDeviceInfo_Device_1000(uuid) {
 							 	$('#' + uuid + '-modal').modal('hide');
 								ResetPage();
 							 });
-		} else {
-			$('#generic-modal-update-failed').modal('show');
-		}
-		
-		$('#' + uuid + '-modal').modal('hide');
-		ResetPage();
-	});
 }
 
 function onClickSwitch (sesnorUuid, deviceUuid, value) {
@@ -214,14 +212,6 @@ function onClickSwitch (sesnorUuid, deviceUuid, value) {
 									]
 								}, 
 							}, function (res) { });
-}
-
-function onMouseOverUpdateLink (obj) {
-	obj.style.color = "red";
-}
-
-function onMouseOutUpdateLink (obj) {
-	obj.style.color = "black";
 }
 
 function OnDeviceLoaded_1000(uuid) {
