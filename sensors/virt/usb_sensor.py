@@ -64,15 +64,7 @@ class MkSThisMachine ():
 
 	def WebSocketDataArrivedCallback (self, json):
 		request = self.Network.GetRequestFromJson(json)
-		if request == "set_sensor":
-			data = self.Network.GetDataFromJson(json)
-			ret = self.UpdateSensor(data)
-			if self.UpdateLocalDB == "True":
-				print "Saving to file ..."
-				self.File.AppendToFile(self.Network.GetUUIDFromJson(data) + ".json", "{\"ts\":" + str(time.time()) + ",\"v\":" + str(self.Network.GetValueFromJson(data)) + "},")
-			if ret == True:
-				self.Network.UpdateSensorsWS(self.Sensors)
-		elif request == "direct":
+		if request == "direct":
 			reqPayload = self.Network.GetPayloadFromJson(json)
 			reqCommand = self.Network.GetCommandFromJson(json)
 			self.DirectRequestHandler(reqCommand, reqPayload)
@@ -94,7 +86,7 @@ class MkSThisMachine ():
 			if sensor.UUID == uuid:
 				sensor.Name = name
 				return True
-	
+
 		return False
 
 	def UpdateSensor (self, uuid, value):
@@ -102,14 +94,14 @@ class MkSThisMachine ():
 			if sensor.UUID == uuid:
 				if self.UpdateLocalDB == "True":
 					if sensor.Value != value:
-						self.File.AppendToFile(sensor.UUID + ".json", "{\"ts\":" + str(time.time()) + ",\"v\":" + value + "},")
+						self.File.AppendToFile(sensor.UUID + ".json", "{\"ts\":" + str(time.time()) + ",\"v\":" + value + "},\n")
 						print "Saving to file ..."
 				sensor.Value = value
 				self.Device.SetSensor(sensor.ID, sensor.Value)
 				return True
-	
+
 		return False
-	
+
 	def SetUpdateInterval (self):
 		self.Delay = self.UpdateInterval
 
@@ -160,7 +152,7 @@ class MkSThisMachine ():
 		except:
 			print "Error: system.json incorrect"
 			self.Exit()
-		
+
 		self.ApiUrl 	= dataSystem["apiurl"]
 		self.WsUrl		= dataSystem["wsurl"]
 		self.UserName 	= dataSystem["username"]
@@ -174,7 +166,7 @@ class MkSThisMachine ():
 		self.OSType 	= dataSystem["device"]["ostype"]
 		self.OSVersion 	= dataSystem["device"]["osversion"]
 		self.BrandName 	= dataSystem["device"]["brandname"]
-		
+
 		if jsonConfigStr != "":
 			# Convert to Json.
 			dataConfig = json.loads(jsonConfigStr)
@@ -205,17 +197,23 @@ class MkSThisMachine ():
 
 	def UpdateSensorState (self):
 		print "UpdateSensorState"
+		DoUpdate = False
 		for item in self.Sensors:
 			DeviceId, Value = self.Device.GetSensor(item.ID)
 			if self.UpdateLocalDB == "True":
 				if item.Value != Value:
 					print "Saving to file ..."
-					self.File.AppendToFile(item.UUID + ".json", "{\"ts\":" + str(time.time()) + ",\"v\":" + str(Value) + "},")
-			item.Value = Value
+					self.File.AppendToFile(item.UUID + ".json", "{\"ts\":" + str(time.time()) + ",\"v\":" + str(Value) + "},\n")
+			if self.UpdateOnChange == "True":
+				if item.Value != Value:
+					DoUpdate = True
+			else:
+				DoUpdate = True
 
-		# If device failed to update WS we need to try access server again
-		if False == self.SendDirectCommand_UpdateSensors():
-			self.State = "ACCESS"
+			if DoUpdate == True:
+				item.Value = Value
+				if False == self.SendDirectCommand_UpdateSensors():
+					self.State = "ACCESS"
 
 	def Run (self):
 		ret = self.Device.Connect()
@@ -227,21 +225,25 @@ class MkSThisMachine ():
 		while self.IsRunnig:
 			self.Method = self.States[self.State]
 			self.Method()
-			time.sleep(self.Delay)
+			if self.UpdateOnChange == "True":
+				time.sleep(10)
+			else:
+				time.sleep(self.Delay)
 
 		self.Connector.DisconnectDevice()
 		sys.exit(1);
-	
+
 	def Exit (self):
-		self.IsRunnig = False		
+		self.IsRunnig = False
 
 machine = MkSThisMachine()
 def signal_handler(signal, frame):
 	machine.Exit()
-	
+
 def main():
 	signal.signal(signal.SIGINT, signal_handler)
 	machine.Run()
 
 if __name__ == "__main__":
     main()
+

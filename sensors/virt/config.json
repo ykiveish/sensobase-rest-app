@@ -1,1 +1,1 @@
-{"device":{"update_interval":10,"update_on_change":"False","update_local_db":"False"}}
+{"device":{"update_interval":60,"update_on_change":"True","update_local_db":"True"}}
