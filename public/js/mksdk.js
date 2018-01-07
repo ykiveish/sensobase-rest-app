@@ -8,6 +8,26 @@ function Instance() {
 }
 var objInstance = Instance();
 
+function MkSLoadModuleHtml (name, callback) {
+	jQuery.ajax({
+        url: "modules/" + name + ".html",
+		type: "GET",
+        dataType: "html",
+        success: callback,
+        async: false 
+    });
+}
+
+function MkSLoadModuleJavascript (name, callback) {
+	jQuery.ajax({
+        url: "modules/" + name + ".js",
+		type: "GET",
+        dataType: "script",
+        success: callback,
+        async: false 
+    });
+}
+
 function MkSRegisterToSensorListener(obj) {
 	if (!!window.EventSource) {
 		console.log ((new Date()) + " #> Registered to sensor stream [" + obj.key + "]");
