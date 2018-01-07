@@ -61,6 +61,7 @@ class MkSThisMachine ():
 	def WebSocketConnectedCallback (self):
 		print "WebSocketConnectedCallback"
 		self.Network.UpdateSensorsWS(self.Sensors)
+		# TODO - We use onlr direct commands.
 
 	def WebSocketDataArrivedCallback (self, json):
 		request = self.Network.GetRequestFromJson(json)
@@ -106,7 +107,14 @@ class MkSThisMachine ():
 		self.Delay = self.UpdateInterval
 
 	def DirectRequestHandler (self, command, payload):
-		if command == "get_device_config":
+		if command == "get_device_info":
+			resPayload = "\"sensors\":["
+			for item in self.Sensors:
+				resPayload += "{\"uuid\":\"" + str(item.UUID) + "\",\"type\":" + str(item.Type) + ",\"name\":\"" + item.Name + "\",\"value\":" + str(item.Value) + "},"
+			resPayload = resPayload[:-1] + "]"
+			dataToWeb = self.Network.BuildDirectResponse("get_device_info", resPayload)
+			self.Network.Response(dataToWeb)
+		elif command == "get_device_config":
 			resPayload = "{\"response\":\"direct\",\"data\":{\"key\":\"" + str(self.Network.UserDevKey) + "\",\"device\":{\"uuid\":\"" + str(self.UUID) + "\",\"type\":" + str(self.Type) + ",\"cmd\":\"get_device_config\"},\"payload\":{\"interval\":" + str(self.UpdateInterval) + ",\"update_on_change\":\"" + self.UpdateOnChange + "\",\"update_local_db\":\"" + self.UpdateLocalDB + "\"}}}"
 			self.Network.Response(resPayload)
 		elif command == "set_device_config":
@@ -133,7 +141,7 @@ class MkSThisMachine ():
 		for item in self.Sensors:
 			resPayload += "{\"uuid\":\"" + str(item.UUID) + "\",\"type\":" + str(item.Type) + ",\"name\":\"" + item.Name + "\",\"value\":" + str(item.Value) + "},"
 		resPayload = resPayload[:-1] + "]"
-		dataToWeb = self.Network.BuildDirectResponse("set_device_sensors", resPayload)
+		dataToWeb = self.Network.BuildDirectResponse("get_device_sensors", resPayload)
 		return self.Network.Response(dataToWeb)
 
 	def ReadAllSensors (self):
