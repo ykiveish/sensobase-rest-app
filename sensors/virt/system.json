@@ -7,6 +7,7 @@
 	"device":
 	{
 		"uuid":"ac6de837-7863-72a9-c789-b0aae7e9d93e",
+		"isHW":"True",
 		"type":1000,
 		"ostype":"Linux",
 		"osversion":"Unknown",

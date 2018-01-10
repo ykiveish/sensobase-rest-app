@@ -45,15 +45,6 @@ class Network ():
 			self.UserDevKey = jsonData['key']
 			return True
 
-	def InsertBasicSesnor (self, sensor):
-		data = self.GetRequest(self.ServerUri + "insert/sensor/basic/" + self.UserDevKey + "/" + self.DeviceUUID + "/" + sensor.UUID + "/" + str(sensor.Type) + "/" + str(sensor.Value));
-
-		if ('failed' in data):
-			return "", False
-
-		jsonData = json.loads(data)
-		return jsonData, True
-
 	def InsertDevice (self, device):
 		data = self.GetRequest(self.ServerUri + "insert/device/" + self.UserDevKey + "/" + str(device.Type) + "/" + device.UUID + "/" + device.OSType + "/" + device.OSVersion + "/" + device.BrandName)
 
