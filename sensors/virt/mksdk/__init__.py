@@ -2,6 +2,6 @@ import MkSDevice
 import MkSSensor
 import MkSUSBAdaptor
 import MkSProtocol
-import MkSArduinoSensor
+import MkSConnectorArduino
 import MkSNetMachine
 

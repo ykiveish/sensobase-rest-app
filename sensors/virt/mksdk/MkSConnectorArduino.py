@@ -6,7 +6,7 @@ import struct
 import MkSUSBAdaptor
 import MkSProtocol
 
-class ArduinoSensor ():
+class Connector ():
 	def __init__ (self, adaptor, protocol):
 		self.Adaptor  = adaptor
 		self.Protocol = protocol
@@ -41,7 +41,11 @@ class ArduinoSensor ():
 				return True
 
 		return False
-
+	
+	def Disconnect(self):
+		print "Connector Disconnected"
+		self.Adaptor.DisconnectDevice()
+	
 	def GetUUID (self):
 		txPacket = self.Protocol.GetDeviceUUIDCommand()
 		rxPacket = self.Adaptor.Send(txPacket)
@@ -57,3 +61,4 @@ class ArduinoSensor ():
 		rxPacket = self.Adaptor.Send(txPacket)
 		MagicOne, MagicTwo, Opcode, Length, DeviceId, Value = struct.unpack("BBHBBH", rxPacket[0:8])
 		return DeviceId, Value
+	
