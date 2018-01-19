@@ -1,4 +1,5 @@
 var express     = require('express');
+var bodyParser  = require('body-parser')
 var path        = require('path');
 const sqlModule = require('./modules/sqlite.js')();
 const secModule = require('./modules/security.js')();
@@ -18,6 +19,12 @@ var KnownOS = ["Linux", "Windows", "Mac", "iOS", "Android", "NoOS"];
 var KnownBrandName = ["MakeSense-Virtual", "MakeSense"];
 
 var app = express();
+
+app.use(bodyParser.urlencoded({
+	extended: true
+}));
+app.use(bodyParser.json());
+
 app.use(express.static(path.join(__dirname, 'public')));
 
 var Prime 	= 29; // 32416189669
@@ -104,8 +111,15 @@ var DisconnectedDeviceHandler = setInterval (DisconnectedDeviceHandlerFunc, 5000
 // WebSocket server
 wsServer.on('request', function(request) {
 	var connection = request.accept(null, request.origin);
-	var index = IOTClients.push(connection) - 1;
 	
+	if (request.httpRequest.headers.uuid == undefined || request.httpRequest.headers.uuid == "") {
+		console.log("ERROR: Device without UUID trying to connect WebSocket ...");
+		connection.send("Missing uuid");
+		return;
+	}
+	
+	console.log("New device connection request ... " + request.httpRequest.headers.uuid)
+	var index = IOTClients.push(connection) - 1;
 	IOTClientsTable[request.httpRequest.headers.uuid] = index;
 	
 	connection.on('message', function(message) {

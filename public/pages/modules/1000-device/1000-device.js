@@ -51,6 +51,12 @@ function GetSensorsData_Handler(data) {
 				"<table class=\"table table-hover\"><thead><tr><th>#</th><th>Type</th><th>Name</th><th><div style=\"text-align:center\">Value/Action</div></th><th><div style=\"text-align:center\">Favorite</div></th></tr></thead><tbody>";
 				for (i = 0; i < data.payload.sensors.length; i++) {
 					var sensor = data.payload.sensors[i];
+
+					var isFavorite = "No";
+					if (ConvertBoleanToJavascript(sensor.is_on_dashboard) == true) {
+						isFavorite = "Yes";
+					}
+
 					switch(sensor.type) {
 						case 1:
 							html += "<tr>" +
@@ -58,7 +64,7 @@ function GetSensorsData_Handler(data) {
 							"<td><img width=\"25px\" src=\"../images/basic_sensors/temperature_good.png\"/></td>" +
 							"<td><label id=\"" + sensor.uuid + "-name\">" + sensor.name + "</label></td>" +
 							"<td align=\"center\"><span class=\"text-muted\" style=\"font-size:large\"><em id=\"" + sensor.uuid + "\">" + sensor.value + "</em> C</span></td>" +
-							"<td align=\"center\"><span class=\"text-muted\" style=\"font-size:small\">No</span></td>" +
+							"<td align=\"center\"><span class=\"text-muted\" style=\"font-size:small\">" + isFavorite + "</span></td>" +
 							"</tr>";
 						break;
 						case 2:
@@ -67,7 +73,7 @@ function GetSensorsData_Handler(data) {
 							"<td><img width=\"25px\" src=\"../images/basic_sensors/humidity.png\"/></td>" +
 							"<td><label id=\"" + sensor.uuid + "-name\">" + sensor.name + "</label></td>" +
 							"<td align=\"center\"><span class=\"text-muted\" style=\"font-size:large\"><em id=\"" + sensor.uuid + "\">" + sensor.value + "</em> %</span></td>" +
-							"<td align=\"center\"><span class=\"text-muted\" style=\"font-size:small\">No</span></td>" +
+							"<td align=\"center\"><span class=\"text-muted\" style=\"font-size:small\">" + isFavorite + "</span></td>" +
 							"</tr>";
 						break;
 						case 3:
@@ -76,7 +82,7 @@ function GetSensorsData_Handler(data) {
 							"<td><img width=\"25px\" src=\"../images/basic_sensors/luminance.png\"/></td>" +
 							"<td><label id=\"" + sensor.uuid + "-name\">" + sensor.name + "</label></td>" +
 							"<td align=\"center\"><span class=\"text-muted\" style=\"font-size:large\"><em id=\"" + sensor.uuid + "\">" + sensor.value + "</em> %</span></td>" +
-							"<td align=\"center\"><span class=\"text-muted\" style=\"font-size:small\">No</span></td>" +
+							"<td align=\"center\"><span class=\"text-muted\" style=\"font-size:small\">" + isFavorite + "</span></td>" +
 							"</tr>";
 						break;
 						case 4:
@@ -85,7 +91,7 @@ function GetSensorsData_Handler(data) {
 							"<td><img width=\"30px\" src=\"../images/basic_sensors/switch.png\"/></td>" +
 							"<td><label id=\"" + sensor.uuid + "-name\">" + sensor.name + "</label></td>" +
 							"<td align=\"center\"><div onclick=\"onClickSwitch('" + sensor.uuid + "','" + data.device.uuid + "');\"><input id=\"" + sensor.uuid + "_toggle\" type=\"checkbox\" data-toggle=\"toggle\" data-onstyle=\"success\" value=\"" + sensor.value + "\" data-offstyle=\"danger\"></div></td>" +
-							"<td align=\"center\"><span class=\"text-muted\" style=\"font-size:small\">No</span></td>" +
+							"<td align=\"center\"><span class=\"text-muted\" style=\"font-size:small\">" + isFavorite + "</span></td>" +
 							"</tr>";
 						default:
 						break;

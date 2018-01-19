@@ -13,18 +13,20 @@ function GetDevices() {
 		async: true,
 	    success: function (data) {
 			data.forEach(function(element) {
-				objStorage.Devices[element.uuid] = element;
-				MkSLoadModuleJavascript(element.type + "-device" + "/" + element.type + "-sensor", function(data) {
-					document.getElementById('sensors_context').innerHTML += "<div id=\"dashboard-sensor-area-" + element.uuid + "\"></div>";
-					window['OnDeviceLoaded_' + element.type](element.uuid);
-				});
+				if (element.type == 1000) {
+					objStorage.Devices[element.uuid] = element;
+					MkSLoadModuleJavascript(element.type + "-device" + "/" + element.type + "-sensor", function(data) {
+						document.getElementById('sensors_context').innerHTML += "<div id=\"dashboard-sensor-area-" + element.uuid + "\"></div>";
+						window['OnDeviceLoaded_' + element.type](element.uuid);
+					});
+				}
 			});
 	    }
 	});
 }
 
 function ResetPage() {
-	document.getElementById('sensor_context').innerHTML = "";
+	document.getElementById('sensors_context').innerHTML = "";
 	GetDevices();
 }
 

@@ -146,12 +146,12 @@ SqliteDB.prototype.SelectUserByKey = function(key, callback) {
           user.ts = rows[0].ts;
           user.lastLoginTs = rows[0].last_login_ts;
           user.enabled = rows[0].enabled;
-          callback(null, user);
+          callback({info:"User"}, user);
           return;
         }
       }
 
-      callback(null, null);
+      callback({error:"No User"}, null);
     });
   });
 }
@@ -356,7 +356,7 @@ SqliteDB.prototype.InsertDevice = function(device, callback) {
     var query = "INSERT INTO `tbl_devices` (`id`,`user_id`,`type`,`uuid`,`os_type`,`os_version`,`brand_name`,`name`,`description`,`last_update_ts`,`enabled`) " +
         "VALUES (NULL," + device.userId + "," + device.type + ",'" + device.uuid + "','" + device.osType + "','" + device.osVersion + "','" + device.brandName + "','New Device','Description'," + device.lastUpdateTs + ",1);";
     sql.run(query);
-    callback({info:"OK"});
+    callback({info:"Device Inserted"});
   });
 }
 

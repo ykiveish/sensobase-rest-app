@@ -91,6 +91,50 @@ module.exports = function(app, security, sql, iotClients, iotTable, storage) {
 		});
 	});
 	
+	app.post ('/device/register', function (req, res) {
+		var data = JSON.stringify(req.body)
+		data = data.substring(2, data.length - 5)
+		data = data.split('\\').join('');
+		var jData = JSON.parse(data);
+		
+		security.CheckUUID(jData.key, function (valid) {
+			if (valid) {
+				sql.CheckDeviceByUUID(jData.payload, function(err, data) {
+					if (data == true) {
+						res.json({info:"Device registered"});
+					} else {
+						sql.SelectUserByKey(req.params.key, function (err, user) {
+							if (err.info != undefined) {
+								var device = {
+								id: 0,
+								userId: user.id,
+								type: jData.payload.type,
+								uuid: jData.payload.uuid,
+								osType: jData.payload.ostype,
+								osVersion: jData.payload.osversion,
+								brandName: jData.payload.brandname,
+								lastUpdateTs: moment().unix(),
+								enabled: 1
+							};
+							sql.InsertDevice(device, function(err) {
+								if (err.info != undefined) {
+									res.json({info:"New device registered"});
+								} else {
+									res.json({error:"Failed to register device"});
+								}
+							});
+							} else {
+								res.json(err);
+							}
+						});
+					}
+				});
+			} else {
+				res.json({error:"Security issue"});
+			}
+		});
+	});
+	
 	app.get('/insert/device/:key/:type/:uuid/:ostype/:osversion/:brandname', function(req, res) {
 		var reqDevice = {
 			uuid: req.params.uuid,
